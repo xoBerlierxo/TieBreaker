@@ -17,6 +17,11 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 
 func ptr[T any](v T) *T { return &v }
 
+func withName(v catalog.Variant, make, model string) catalog.Variant {
+	v.Make, v.Model = make, model
+	return v
+}
+
 // fixtureInput is a hand-built two-car report input (fictional cars, made-up
 // numbers): car A is cheaper to own, car B is safer and automatic, and the
 // buyer priced safety at ₹1L–2L and automatic at ₹25k–50k.
@@ -26,8 +31,8 @@ func fixtureInput() Input {
 	rc := session.RunContext{
 		UserState: "TN", HorizonYears: 5, PlaceholderCnt: 59,
 		Cars: []session.RunCar{
-			{ItemID: "item-a", Label: "Test Car A", Condition: session.ConditionNew, Variant: rated},
-			{ItemID: "item-b", Label: "Test Car B", Condition: session.ConditionNew, Variant: safer},
+			{ItemID: "item-a", Label: "Test Car A", Condition: session.ConditionNew, Variant: withName(rated, "Test", "Car A")},
+			{ItemID: "item-b", Label: "Test Car B", Condition: session.ConditionNew, Variant: withName(safer, "Test", "Car B")},
 		},
 		Attributes: []interview.Attribute{
 			{Key: "safety", Label: "safety rating", Shares: []float64{0, 1}, Best: 1, Worst: 0, ValueLabels: []string{"3★", "5★"}},

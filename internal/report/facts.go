@@ -65,6 +65,8 @@ type UsageFacts struct {
 type CarFacts struct {
 	ItemID        string                    `json:"item_id"`
 	Label         string                    `json:"label"`
+	Make          string                    `json:"make"`
+	Model         string                    `json:"model"`
 	Condition     string                    `json:"condition"`
 	Fuel          string                    `json:"fuel"`
 	Verified      bool                      `json:"verified"`
@@ -154,7 +156,8 @@ func BuildFacts(in Input) Facts {
 	for i, car := range rc.Cars {
 		cs := in.Summary.Cars[i]
 		cf := CarFacts{
-			ItemID: car.ItemID, Label: car.Label, Condition: string(car.Condition), Fuel: string(car.Variant.FuelType),
+			ItemID: car.ItemID, Label: car.Label, Make: car.Variant.Make, Model: car.Variant.Model,
+			Condition: string(car.Condition), Fuel: string(car.Variant.FuelType),
 			Verified: car.Variant.Verified, SafetyRating: safetyRating(car),
 			PBest: cs.PBest, PCheapest: cs.PCheapest, NetCost: cs.NetCost, OwnershipCost: cs.OwnershipCost,
 			Breakdown: cs.Breakdown, Pros: []Point{}, Cons: []Point{}, NotAsked: []string{}, Tipping: []string{}, Warnings: []string{},
