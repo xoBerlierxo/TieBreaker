@@ -32,7 +32,10 @@ type Attribute struct {
 	Best    int       `json:"best"`   // index of the best car
 	Worst   int       `json:"worst"`  // index of the worst car
 	Warning string    `json:"warning,omitempty"`
-	unit    func(v float64) string
+	// ValueLabels describes each car's value in words ("5★", "350 L of boot
+	// space"), so stored runs and reports can show it without the catalogue.
+	ValueLabels []string `json:"value_labels"`
+	unit        func(v float64) string
 }
 
 // IsFeature reports whether an attribute key is a feature difference.
@@ -121,10 +124,12 @@ func newAttribute(key, label string, values []float64, unit func(float64) string
 		return Attribute{}, false
 	}
 	shares := make([]float64, len(values))
+	labels := make([]string, len(values))
 	for i, v := range values {
 		shares[i] = (v - lo) / (hi - lo)
+		labels[i] = unit(v)
 	}
-	return Attribute{Key: key, Label: label, Values: values, Shares: shares, Best: best, Worst: worst, unit: unit}, true
+	return Attribute{Key: key, Label: label, Values: values, Shares: shares, Best: best, Worst: worst, ValueLabels: labels, unit: unit}, true
 }
 
 func collectInt(cars []catalog.Variant, get func(catalog.Variant) *int) ([]float64, bool) {
@@ -158,10 +163,14 @@ func boolTo01(b bool) float64 {
 
 // Describe returns a human description of car i's value, e.g. "5★" or "350 L of boot space".
 func (a Attribute) Describe(i int) string {
-	if a.unit == nil {
+	switch {
+	case a.unit != nil:
+		return a.unit(a.Values[i])
+	case i < len(a.ValueLabels):
+		return a.ValueLabels[i]
+	default:
 		return fmt.Sprintf("%g", a.Values[i])
 	}
-	return a.unit(a.Values[i])
 }
 
 // QuestionText is the yes/no ladder question for one step (SPEC §8.1 examples).

@@ -41,6 +41,7 @@ type Config struct {
 	ChunkSize    int
 	QuickTimeout time.Duration
 	DiscountRate float64
+	FullFutures  int
 }
 
 // Service is the session business logic. Handlers call it; it never knows about HTTP.
