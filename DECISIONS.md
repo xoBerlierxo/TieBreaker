@@ -241,3 +241,60 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 
 ### D-M1-12 — Search details
 - **Decision:** `ILIKE '%q%'` on exactly the expression the trigram index uses. `%` and `_` in the query are escaped. `limit` defaults to 20, and values outside 1–50 are a 400 (not silently clamped). A malformed UUID returns 404, not a Postgres syntax error.
+
+---
+
+## M2 — Simulation engine
+
+### D-M2-1 — The engine takes fully resolved inputs
+- **Decision:** `sim.Inputs` holds per-car numbers (upfront price, value basis, service cost per visit, repair rate, resale curve…) and shared `World` numbers. The session package does the mapping from the catalogue and assumptions to these numbers (M3).
+- **Why:** the engine stays a pure function with no lookups, and `sim.Inputs` is exactly the JSON stored in a run (`inputs_json`). That makes a run reproducible from its database row alone.
+
+### D-M2-2 — One seed per future, then streams keyed by name
+- **Decision:** the chunk RNG is exactly as the spec requires: `rand.New(rand.NewPCG(masterSeed, uint64(i)))`. Each future takes one `Uint64()` from it as `futureSeed`. Then:
+  - the world uses `PCG(futureSeed, const)`;
+  - each car uses `PCG(futureSeed, FNV64a("car:"+ID))`;
+  - each preference uses `PCG(futureSeed, FNV64a("pref:"+key))`.
+- **Why:** if everything were drawn sequentially from the chunk stream, adding a car, a preference or a year would shift every later number, which destroys common random numbers. With keyed streams, every comparison the interview and tipping-point code makes (same seed, one input changed) is on identical futures. The tests prove it: `TestCarStream_UnaffectedByAddingAnotherCar` and `TestPrefStream_AddingAttributeDoesNotShiftOthers`.
+- **Fixed draw count:** the world stream always draws 87 values (15 years even if T is shorter, every energy even with no EV).
+
+### D-M2-3 — "Merge in chunk order" is done by index, not by a copy step
+- **Decision:** results are pre-allocated, and future k writes slot k. Chunks write only their own disjoint ranges, so the assembled result is in chunk order no matter which goroutine finishes first. No mutex, no channel, no second copy.
+- **Why:** this meets SPEC §10.1's goal (identical output for any worker count) with less memory and code. The race detector and `TestRun_IdenticalAcrossWorkerCounts_1_4_16` (bit-exact) confirm it.
+
+### D-M2-4 — Concurrency with `errgroup.WithContext` + `SetLimit`
+- **Decision:** `g.SetLimit(workers)` bounds parallelism (`g.Go` blocks when it is full). The first error cancels `gctx`, and the dispatch loop stops starting new chunks once `gctx` is cancelled.
+- **Progress:** the callback runs under a mutex, so callers see 1, 2, 3… in order.
+- **Workers** = `runtime.GOMAXPROCS(0)` by default, capped at the number of chunks.
+
+### D-M2-5 — Cancellation is checked every 256 futures
+- **Decision:** each chunk checks `ctx.Err()` every 256 futures (SPEC §10.1). `Run` returns `ctx.Err()` (`context.Canceled` or `DeadlineExceeded`) and no partial result.
+- **Tests:** `TestRun_CancelMidRunReturnsCanceledPromptly` measures how fast it returns. goleak in `TestMain` fails the package if a goroutine survives.
+
+### D-M2-6 — Mean-one log-normal shocks
+- **Decision:** km variation and resale shocks are `exp(σZ − σ²/2)`.
+- **Why:** `E[exp(σZ)] = exp(σ²/2) > 1`, so a plain `exp(σZ)` would quietly inflate costs and resale values as σ grows. Subtracting σ²/2 keeps the mean exactly equal to the deterministic value. Price paths keep the spec's `exp(μ + σZ)`, with μ as given in the assumptions.
+
+### D-M2-7 — Year conventions
+- **Decision:** year 1 pays today's price, and costs are discounted at the end of their year. Age in year t = age at purchase + t − 1. Insurance IDV follows the schedule from age 0. For used cars, IDV and resale are scaled relative to the car's age at purchase.
+- **Why:** these conventions make the hand-checkable test unambiguous. Each one is written out in `docs/model.md` §3.
+
+### D-M2-8 — Financing is deterministic and precomputed once per run
+- **Why:** loan payments don't depend on the future, so they are computed once in `prepare`. Any balance still owed at the horizon is paid off then, and the principal is capped at each car's price.
+
+### D-M2-9 — P(best): exact ties split equally; entropy in bits
+- **Why:** two identical cars must come out 50/50 for the deadlock sanity test, not 100/0 in favour of whichever is listed first. Entropy in bits (log₂) makes the 0.02 information-gain threshold easy to read: 1 bit = a fair coin between two cars.
+
+### D-M2-10 — Percentiles use type-7 linear interpolation
+- **Why:** this is the most common definition (NumPy's default, Excel's `PERCENTILE.INC`), so p10/p50/p90 match what a reviewer computes in a spreadsheet.
+
+### D-M2-11 — Golden-hash regression test
+- **Decision:** `TestRun_GoldenHash` stores the SHA-256 of all samples for a fixed input and seed. Any change in output fails it; the fix is to bump `sim.ModelVersion` and update the hash.
+- **Why:** reproducible share links depend on the model not changing silently.
+- **Limit:** the Go spec allows fused multiply-add on some architectures, so bit-exactness is per architecture (amd64 in CI and on Railway).
+
+### D-M2-12 — Benchmarks set the worker count explicitly
+- **Why:** `-cpu=1,4` changes GOMAXPROCS, but the first measurements didn't reflect it the way expected (a "1 CPU" run reported 12-thread speed). Sub-benchmarks with `workers=1/4/NumCPU` give unambiguous numbers for the README. Results: 50k futures in 33 ms on 4 workers; quick sim p95 7.4 ms (`docs/benchmarks.md`).
+
+### D-M2-13 — Assumption key `service.default_interval_km` added
+- **Why:** a variant with no service interval still needs one to simulate. The fallback value belongs in the assumptions table (SPEC §10: every assumption lives there), not hard-coded, and a data warning is shown when it is used.

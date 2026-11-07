@@ -2,7 +2,7 @@
 
 This file follows the path a program run or a request takes through the files and functions. Each milestone adds its flows. Function names are written `package.Function`, with the file in brackets.
 
-Status: **M1 (catalogue)**. Startup, health checks, shutdown, migrations, seeding, catalogue search and admin writes are covered.
+Status: **M2 (engine)**. Startup, health checks, shutdown, migrations, seeding, the catalogue and the simulation engine are covered.
 
 ---
 
@@ -154,7 +154,35 @@ catalog.Service.LoadAssumptionSet(ctx, state, "sim-v1")      [internal/catalog/a
                        → AssumptionSet (+ UnverifiedKeys for warnings, Snapshot for runs)
 ```
 
-## 10. Tests and where they plug in
+## 10. The simulation engine (`sim.Run`): pure; called by the interview (M3) and the worker (M4)
+
+```
+sim.Run(ctx, inputs, options)                       [internal/sim/run.go]
+ ├─ inputs.Validate()                                [validate.go]   → ErrInvalidInputs
+ ├─ prepare(&inputs)                                 [prepare.go]
+ │    discount[t], inflation[t], price trends; per car: stream key, unit price (home or public tariff),
+ │    cash upfront + financing PV (loanSchedule [finance.go]), IDV and resale normalisers
+ ├─ newResult: pre-allocate every sample slice (one slot per future)
+ ├─ errgroup.WithContext + SetLimit(workers)
+ │   for chunk := range numChunks  (stop dispatching once gctx is cancelled)
+ │     g.Go → runChunk(gctx, chunk)
+ │             chunkRNG = rand.New(rand.NewPCG(masterSeed, chunk))
+ │             for each future k in the chunk:
+ │               every 256 futures: ctx.Err() → return
+ │               futureSeed = chunkRNG.Uint64()
+ │               world stream → drawWorld (87 fixed draws) [world.go] → buildPaths (km, price multipliers)
+ │               prefValues: per attribute, pref stream → bracket + value → Σ share × value  [future.go]
+ │               for each car: car stream → evaluateCar → 8 discounted categories  [future.go]
+ │                             write slot k: categories, ownership (fixed-order sum), pref, net
+ │           → progress callback under a mutex (monotonic)
+ ├─ g.Wait()  → first error (e.g. context.Canceled)
+ └─ ctx.Err() check → Result{Cars: per-car samples}
+
+decision.Summarize(result)                          [internal/decision/summary.go]
+ └─ PBest (ties split) · PCheapest · percentiles (type 7) · median per category · Leader · Entropy (bits)
+```
+
+## 11. Tests and where they plug in
 
 | Flow | How it is tested without real infrastructure |
 |---|---|
@@ -164,3 +192,4 @@ catalog.Service.LoadAssumptionSet(ctx, state, "sim-v1")      [internal/catalog/a
 | store (integration) | `testutil.Postgres/Redis` start real containers once per package in `TestMain` |
 | catalogue (integration) | `TestMain` starts Postgres, runs `store.MigrateUp`; each test `TRUNCATE`s the catalogue tables |
 | catalogue handlers | `fakeCatalog` implements `httpapi.CatalogService` |
+| engine | plain `sim.Run` calls on fixtures (`handInputs`, `stochasticInputs`); goleak in `TestMain` |

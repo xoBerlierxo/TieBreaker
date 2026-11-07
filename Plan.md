@@ -291,11 +291,11 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
 
 **Acceptance (SPEC §20):** §10.1 met; hand-checkable, common-sense, determinism and cancellation tests pass; benchmark recorded.
 
-- [ ] **M2.1 Engine types and validation**
+- [x] **M2.1 Engine types and validation**
   - Files: `internal/sim/types.go` (`Inputs`, `Car`, `Usage`, `World` params, `PrefAttribute{Key, Shares []float64, Dist PrefDist}`, `Options`, `Result`), `internal/sim/validate.go`, `internal/sim/version.go` (`ModelVersion = "sim-v1"`).
   - Tests: `TestInputsValidate_Table` (no cars, horizon 0 and 16, a non-positive price or efficiency, a bracket with `lo > hi`, shares outside [0, 1], a chunk size ≤ 0).
   - Proof: `go test -race ./internal/sim/...`
-- [ ] **M2.2 Deterministic cost components**
+- [x] **M2.2 Deterministic cost components** *(done: the cost components live in `finance.go` + `future.go` instead of one file per category)*
   - Files: `internal/sim/finance.go` (monthly EMI, payments per year, outstanding balance at T), `discount.go`, `energy.go` (ICE/CNG/hybrid by unit; EV with charging efficiency and the home or public tariff), `insurance.go` (IDV schedule × rate), `service.go` (`max(km/interval, min_visits)` × cost × inflation), `tyres.go`, `resale.go` (curve × shocks × battery wear, clamped to [0, purchase price]; used-car curve ratio).
   - Tests, each with the hand calculation written in a comment:
     - `TestEMI_HandCalculated`.
@@ -306,7 +306,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestIDV_ScheduleFallsEachYear`.
     - `TestResale_ClampedToZeroAndPurchasePrice`, `TestResale_UsedCarUsesCurveRatio`.
   - Proof: `go test -race ./internal/sim/...`
-- [ ] **M2.3 Random streams and world sampling**
+- [x] **M2.3 Random streams and world sampling**
   - Files: `internal/sim/rng.go` (`chunkRNG(seed, i)`, `carStream` re-seeding a reused `*rand.PCG`, `streamKey`), `internal/sim/world.go` (fixed draw order and count), `internal/sim/prefs.go` (`PrefDist`: pick a bracket with one uniform draw, then a value inside it with another).
   - Tests:
     - `TestChunkRNG_SameSeedSameSequence`.
@@ -315,7 +315,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestPrefDist_SingleBracketWithinBounds`.
     - `TestPrefDist_MixturePicksEachBracketEqually` (fixed seed, tolerance).
   - Proof: `go test -race ./internal/sim/...`
-- [ ] **M2.4 Evaluating one future, plus the spec's property tests**
+- [x] **M2.4 Evaluating one future, plus the spec's property tests**
   - Files: `internal/sim/future.go` (`evaluate(world, car, rng) Breakdown`, `OwnershipCost`, `NetCost`), `internal/sim/repairs.go` (Poisson λ grows with age, odometer, grade and used status; lognormal cost per event; warranty coverage).
   - Tests:
     - `TestOwnershipCost_HandCheckable_NewCar` (SPEC §15: σ = 0, fixed factors, repair rate 0; a fictional car with round numbers; the exact ₹ value computed by hand in the comment; tolerance 1e-6).
@@ -326,7 +326,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestRepairs_RateRisesWithAgeOdometerAndGrade`.
     - `TestRepairs_WarrantyReducesCostInsideWarranty`.
   - Proof: `go test -race ./internal/sim/...`
-- [ ] **M2.5 `Run`: chunks, workers, ordered merge, cancellation, progress**
+- [x] **M2.5 `Run`: chunks, workers, ordered merge, cancellation, progress** *(done: merge by index, see D-M2-3)*
   - Files: `internal/sim/run.go`, `internal/sim/merge.go`, `internal/sim/main_test.go` (`goleak.VerifyTestMain`).
   - Tests:
     - `TestRun_IdenticalAcrossWorkerCounts_1_4_16` (bit-exact comparison of every sample).
@@ -336,7 +336,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestRun_ProgressCalledOncePerChunkMonotonic`.
     - `TestRun_PreCancelledContextDoesNoWork`.
   - Proof: `go test -race -count=3 ./internal/sim/...`
-- [ ] **M2.6 Summary statistics (`internal/decision`)**
+- [x] **M2.6 Summary statistics (`internal/decision`)**
   - Files: `internal/decision/summary.go` (`Summarize(Result) Summary`: P(best) with exact ties split equally, P(cheapest) on ownership cost, p10/p50/p90 by type-7 interpolation, median breakdown per category), `internal/decision/entropy.go`.
   - Tests:
     - `TestPercentile_Type7KnownValues`.
@@ -345,11 +345,11 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestSanity_DominantCarWinsWithPBestNear1` (cheaper and better on every attribute → P(best) ≥ 0.999).
     - `TestSanity_IdenticalCarsSplitPBest` (|P − 0.5| < 0.03).
   - Proof: `go test -race ./internal/decision/...`
-- [ ] **M2.7 Benchmarks and profiling**
+- [x] **M2.7 Benchmarks and profiling** *(done: 50k futures = 33 ms on 4 workers; quick sim p95 = 7.4 ms)*
   - Files: `internal/sim/bench_test.go` (`BenchmarkRun_3cars_50k` and `BenchmarkRun_3cars_2k`, both reporting futures/second via `b.ReportMetric`), `docs/benchmarks.md` (machine details, `-cpu=1,4`, ns per future per car, allocations).
   - Tests: the benchmarks themselves. Targets: 50k futures in under 5 s on 4 cores; a 2k quick sim with p95 under 150 ms.
   - Proof: `go test -run=^$ -bench=BenchmarkRun -benchmem -cpu=1,4 -count=5 ./internal/sim/` and one `-cpuprofile` pass.
-- [ ] **M2.8 Phase docs**
+- [x] **M2.8 Phase docs**
   - `docs/model.md`: every formula with its symbols, and the draw-order table.
   - Update `DECISIONS.md` (PCG streams, common random numbers, slot merge, ties, type-7 percentiles, floating point across CPU architectures) and `FLOW.md` (inside `Run`).
   - Learning note: **`docs/learning/02-monte-carlo-engine-concurrency.md`**. Covers `math/rand/v2` PCG, `errgroup.SetLimit`, closure capture, `ctx.Err()` polling, goleak, why the merge order matters, benchmarks, pprof. Ends with 3 questions.
