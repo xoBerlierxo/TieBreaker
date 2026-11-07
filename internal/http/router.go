@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"log/slog"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -18,8 +19,19 @@ type Deps struct {
 	MaxBodyBytes int64
 	JWTSecret    string
 
-	Catalog  CatalogService // nil: catalogue routes are not mounted
-	Sessions SessionService // nil: session routes are not mounted
+	Catalog     CatalogService    // nil: catalogue routes are not mounted
+	Sessions    SessionService    // nil: session routes are not mounted
+	Simulations SimulationService // nil: simulation routes are not mounted
+	Progress    ProgressSource
+	Limiter     Limiter // nil: no rate limiting
+	SimLimits   SimLimits
+}
+
+// SimLimits caps simulation starts (SPEC §14), per session and per client IP.
+type SimLimits struct {
+	PerSession int
+	PerIP      int
+	Window     time.Duration
 }
 
 // NewRouter builds the Gin engine with the standard middleware and all routes.
@@ -69,6 +81,23 @@ func NewRouter(d Deps) *gin.Engine {
 		v1.PUT("/sessions/:id/constraints", sh.setConstraints)
 		v1.GET("/sessions/:id/next-question", sh.nextQuestion)
 		v1.POST("/sessions/:id/answers", sh.submitAnswer)
+	}
+
+	if d.Simulations != nil {
+		simh := simulationHandler{logger: d.Logger, sims: d.Simulations, progress: d.Progress}
+		start := []gin.HandlerFunc{}
+		if d.Limiter != nil {
+			start = append(start, rateLimit(d.Limiter, d.Logger,
+				Limit{Name: "sim-session", Max: d.SimLimits.PerSession, Window: d.SimLimits.Window, Key: bySessionParam},
+				Limit{Name: "sim-ip", Max: d.SimLimits.PerIP, Window: d.SimLimits.Window, Key: byClientIP},
+			))
+		}
+		v1.POST("/sessions/:id/simulations", append(start, simh.start)...)
+		v1.GET("/simulations/:id", simh.get)
+		v1.POST("/simulations/:id/cancel", simh.cancel)
+		if d.Progress != nil {
+			v1.GET("/simulations/:id/events", simh.events)
+		}
 	}
 
 	return r

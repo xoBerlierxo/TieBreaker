@@ -31,6 +31,7 @@ type Config struct {
 	Interview InterviewConfig
 	Decision  DecisionConfig
 	Jobs      JobsConfig
+	RateLimit RateLimitConfig
 
 	// DiscountRate is the nominal yearly opportunity-cost rate used to discount
 	// future cash flows (DECISIONS.md D-P-9).
@@ -77,7 +78,17 @@ type DecisionConfig struct {
 
 // JobsConfig configures the background job queue (SPEC §11).
 type JobsConfig struct {
-	Lease time.Duration
+	Lease        time.Duration
+	PollInterval time.Duration
+	Heartbeat    time.Duration
+	MaxAttempts  int
+}
+
+// RateLimitConfig caps expensive requests (SPEC §14), per hour.
+type RateLimitConfig struct {
+	SimPerSession int
+	SimPerIP      int
+	Window        time.Duration
 }
 
 var validAppEnvs = []string{"development", "test", "production"}
@@ -123,7 +134,15 @@ func Load(getenv func(string) string) (Config, error) {
 			WinGap:   p.probability("DECISION_WIN_GAP", 0.15),
 		},
 		Jobs: JobsConfig{
-			Lease: p.seconds("JOB_LEASE_SECONDS", 60),
+			Lease:        p.seconds("JOB_LEASE_SECONDS", 60),
+			PollInterval: p.millis("JOB_POLL_INTERVAL_MS", 1000),
+			Heartbeat:    p.millis("JOB_HEARTBEAT_MS", 1000),
+			MaxAttempts:  p.intMin("JOB_MAX_ATTEMPTS", 3, 1),
+		},
+		RateLimit: RateLimitConfig{
+			SimPerSession: p.intMin("RATE_LIMIT_SIM_PER_SESSION_PER_HOUR", 10, 0),
+			SimPerIP:      p.intMin("RATE_LIMIT_SIM_PER_IP_PER_HOUR", 30, 0),
+			Window:        time.Hour,
 		},
 		DiscountRate: p.floatRange("DISCOUNT_RATE", 0.07, 0, 0.99),
 	}
@@ -131,6 +150,9 @@ func Load(getenv func(string) string) (Config, error) {
 	// Cross-field rules.
 	if !slices.Contains(validAppEnvs, cfg.AppEnv) {
 		p.fail("APP_ENV must be one of %v, got %q", validAppEnvs, cfg.AppEnv)
+	}
+	if cfg.Jobs.Heartbeat >= cfg.Jobs.Lease {
+		p.fail("JOB_HEARTBEAT_MS must be shorter than JOB_LEASE_SECONDS, or leases expire between heartbeats")
 	}
 	if cfg.AppEnv == "production" && len(cfg.JWTSecret) < 32 {
 		p.fail("JWT_SECRET must be at least 32 characters in production")

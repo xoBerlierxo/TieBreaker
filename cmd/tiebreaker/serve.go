@@ -13,6 +13,7 @@ import (
 	"github.com/xoBerlierxo/TieBreaker/internal/config"
 	httpapi "github.com/xoBerlierxo/TieBreaker/internal/http"
 	"github.com/xoBerlierxo/TieBreaker/internal/interview"
+	"github.com/xoBerlierxo/TieBreaker/internal/jobs"
 	"github.com/xoBerlierxo/TieBreaker/internal/session"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
 )
@@ -61,6 +62,14 @@ func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		JWTSecret:    cfg.JWTSecret,
 		Catalog:      cat,
 		Sessions:     sessions,
+		Simulations:  sessions,
+		Progress:     jobs.RedisProgress{Client: rdb},
+		Limiter:      store.NewRateLimiter(rdb),
+		SimLimits: httpapi.SimLimits{
+			PerSession: cfg.RateLimit.SimPerSession,
+			PerIP:      cfg.RateLimit.SimPerIP,
+			Window:     cfg.RateLimit.Window,
+		},
 	})
 
 	return runHTTPServer(ctx, cfg.HTTPAddr, router, cfg.HTTP.ShutdownGrace, logger, nil)
@@ -137,5 +146,6 @@ func sessionConfig(cfg config.Config) session.Config {
 		ChunkSize:    cfg.Sim.ChunkSize,
 		QuickTimeout: cfg.Sim.QuickTimeout,
 		DiscountRate: cfg.DiscountRate,
+		FullFutures:  cfg.Sim.FullFutures,
 	}
 }

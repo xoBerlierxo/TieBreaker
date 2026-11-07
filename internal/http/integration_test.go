@@ -18,10 +18,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/xoBerlierxo/TieBreaker/internal/catalog"
 	"github.com/xoBerlierxo/TieBreaker/internal/interview"
+	"github.com/xoBerlierxo/TieBreaker/internal/jobs"
 	"github.com/xoBerlierxo/TieBreaker/internal/session"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
 	"github.com/xoBerlierxo/TieBreaker/internal/testutil"
@@ -34,6 +36,7 @@ var (
 	itRouter http.Handler
 	itDB     *gorm.DB
 	itDeps   Deps
+	itRedis  *redis.Client
 )
 
 func TestMain(m *testing.M) {
@@ -83,11 +86,15 @@ func runIntegration(m *testing.M) int {
 			Ladder: interview.Ladder{Rungs: []int64{0, 25_000, 50_000, 100_000, 200_000, 400_000}, Cap: 800_000},
 		},
 		QuickFutures: 2000, ChunkSize: 1000, QuickTimeout: 10 * time.Second, DiscountRate: 0.07,
+		FullFutures: 5000,
 	}, store.QuickSimCache{Client: rdb, TTL: time.Hour, Logger: logger}, logger)
+	itRedis = rdb
 
 	itDeps = Deps{
 		Logger: logger, Postgres: store.PostgresPinger{DB: db}, Redis: store.RedisPinger{Client: rdb},
 		MaxBodyBytes: 1 << 20, JWTSecret: testJWTSecret, Catalog: cat, Sessions: sessions,
+		Simulations: sessions, Progress: jobs.RedisProgress{Client: rdb}, Limiter: store.NewRateLimiter(rdb),
+		SimLimits: SimLimits{PerSession: 3, PerIP: 1000, Window: time.Hour},
 	}
 	itRouter = NewRouter(itDeps)
 	return m.Run()
