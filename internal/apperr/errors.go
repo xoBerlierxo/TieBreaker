@@ -23,6 +23,9 @@ var (
 	ErrRateLimited          = errors.New("rate limited")
 	ErrUnavailable          = errors.New("dependency unavailable")
 	ErrPayloadTooLarge      = errors.New("payload too large")
+	ErrConflict             = errors.New("conflict")
+	ErrUnauthorized         = errors.New("unauthorized")
+	ErrForbidden            = errors.New("forbidden")
 )
 
 // Error is a domain error with a human-readable message and optional
