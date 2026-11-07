@@ -2,7 +2,7 @@
 
 This file follows the path a program run or a request takes through the files and functions. Each milestone adds its flows. Function names are written `package.Function`, with the file in brackets.
 
-Status: **M5 (decision + reports)**. The full backend: catalogue, sessions, interview, simulations, the worker, SSE, decisions, tipping points, reports, share links and reproduction.
+Status: **M6 (Gemini)**. The full backend, including optional LLM prose with the fact validator.
 
 ---
 
@@ -347,7 +347,33 @@ tiebreaker verify-run -run-id X [cmd/tiebreaker/verifyrun.go]
 go run ./scripts/demo [scripts/demo/main.go]: the whole flow over HTTP, including SSE, printing the report
 ```
 
-## 20. Tests and where they plug in
+## 20. Optional LLM prose (LLM_ENABLED=true)
+
+```
+cmd/tiebreaker/worker.go proseWriter()
+ └─ LLM disabled → nil (templates only; Gemini never contacted)
+ └─ enabled → report.LLMWriter{Client: llm.Cached{Budget{Gemini}}, Names: catalog.AllNames}
+
+report.Analyzer.draft [internal/report/analyze.go]
+ ├─ RenderTemplate(facts)                          → always rendered (the fallback)
+ └─ LLMWriter.Write(ctx, facts) [internal/report/llm.go]
+     ├─ toLLMFacts: labels, probabilities, costs, pros/cons, tipping sentences (no IDs, seed, state, usage)
+     ├─ log only sha256(prompt)[:8] + its size
+     ├─ Client.GenerateText
+     │    llm.Cached [wrappers.go]: Redis GET llm:<sha256(kind|model|request)> → hit? return
+     │    llm.Budget: INCR llm:budget:<UTC date> > daily max → ErrQuotaExceeded
+     │    llm.Gemini [gemini.go]: context.WithTimeout(20 s) → client.Models.GenerateContent(model, genai.Text(prompt),
+     │         {SystemInstruction, MaxOutputTokens, Temperature 0.2, ThinkingLevelMinimal, RetryOptions{Attempts: 2, 429/5xx}})
+     │         FinishReasonMaxTokens → ErrOutputTruncated;  genai.APIError → wrapped
+     ├─ any error → ok=false (template)
+     └─ ValidateProse(text, facts, catalogue names) [validate.go]
+          remove report car names → other catalogue names? → every number matches a fact (precision-aware)?
+          → verdict matches (deadlock: no winner claims; winner: named)?
+          any violation → ok=false (template)
+ → Draft{ProseMD, ProseSource: "llm" | "template"}
+```
+
+## 21. Tests and where they plug in
 
 | Flow | How it is tested without real infrastructure |
 |---|---|
@@ -364,3 +390,6 @@ go run ./scripts/demo [scripts/demo/main.go]: the whole flow over HTTP, includin
 | simulations over HTTP (integration) | `internal/http/simulations_integration_test.go`: a real worker in a goroutine, SSE over `httptest.NewServer` |
 | reports | `facts_test.go` with a hand-built fixture; golden files in `internal/report/testdata` (`-update` to rewrite) |
 | reports over HTTP (integration) | `internal/http/reports_integration_test.go`: worker with the real Analyzer; share links; `VerifyRun` |
+| Gemini adapter | `internal/llm/gemini_test.go`: the real adapter against an `httptest` server (`BaseURL`) |
+| LLM cache and budget (integration) | `internal/llm/wrappers_integration_test.go`: real Redis, `llm.Fake` inside |
+| fact validator and LLM writer | `validate_test.go` (table), `llm_test.go` with `llm.Fake` |

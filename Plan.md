@@ -568,12 +568,12 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
 
 **Acceptance (SPEC §20):** LLM prose with fact validator and fallback; rate limits; works with `LLM_ENABLED=false`.
 
-- [ ] **M6.0 Re-check the SDK and model** (§1.7): genai version (≥ 2 weeks old), signatures, model status. Record the result in `DECISIONS.md`.
-- [ ] **M6.1 `llm` interface and fake**
+- [x] **M6.0 Re-check the SDK and model** (§1.7): genai version (≥ 2 weeks old), signatures, model status. Record the result in `DECISIONS.md`.
+- [x] **M6.1 `llm` interface and fake**
   - Files: `internal/llm/client.go` (`Client`, `TextRequest{System, Prompt, MaxOutputTokens}`, `JSONRequest{…, Schema any}`, `ErrQuotaExceeded`, `ErrOutputTruncated`), `internal/llm/fake.go`.
   - Tests: `TestFake_ReturnsScriptedResponsesAndRecordsCalls`, `TestFake_ScriptedError`.
   - Proof: `go test -race ./internal/llm/...`
-- [ ] **M6.2 Gemini adapter**
+- [x] **M6.2 Gemini adapter**
   - Files: `internal/llm/gemini.go`: `genai.NewClient(ctx, &genai.ClientConfig{APIKey, Backend: genai.BackendGeminiAPI, HTTPOptions: {Timeout, RetryOptions{Attempts: Ptr[int32](2), HTTPStatusCodes: 429, 500, 502, 503, 504}}})`; `Models.GenerateContent` with `MaxOutputTokens`, `Temperature`, `ThinkingLevelMinimal`, `SystemInstruction`; for JSON, `ResponseMIMEType` + `ResponseJsonSchema`; a per-call `context.WithTimeout` (20 s); `FinishReasonMaxTokens` → `ErrOutputTruncated`; `errors.As` against `genai.APIError`.
   - Tests (against an `httptest` server via `HTTPOptions.BaseURL`; never the real API):
     - `TestGemini_SendsModelLimitsAndThinkingLevel` (checks the request JSON).
@@ -585,11 +585,11 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestGemini_GenerateJSONDecodesIntoOut`.
     - `TestGemini_NeverLogsKeyOrPrompt` (captures `slog` output).
   - Proof: `go test -race ./internal/llm/...`
-- [ ] **M6.3 Cache and quota guard**
+- [x] **M6.3 Cache and quota guard** *(done: both wrappers are in `wrappers.go`)*
   - Files: `internal/llm/cached.go` (a wrapper; Redis key `llm:<sha256(model|system|prompt|schema)>`, 24 h TTL), `internal/llm/budget.go` (daily call cap `LLM_DAILY_MAX_CALLS` in Redis).
   - Tests: `TestCached_SecondIdenticalCallHitsCache`, `TestCached_DifferentModelMisses`, `TestBudget_ExceededReturnsErrQuota` (integration against Redis).
   - Proof: `go test -race ./internal/llm/... && go test -race -tags=integration ./internal/llm/...`
-- [ ] **M6.4 Fact validator**
+- [x] **M6.4 Fact validator**
   - Files: `internal/report/validate.go` (pulls out ₹ amounts (₹/Rs, Indian or Western grouping, lakh/L/crore/k), percentages, km, years, plain numbers and number words; precision taken from the stated form, with hedges such as "about"/"around"/"~" widening the tolerance to one unit of the last stated digit; car names checked against the whole catalogue name list).
   - Tests (table, about 30 cases):
     - `TestValidate_RejectsNumberNotInFacts`.
@@ -601,7 +601,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestValidate_AcceptsNumberWordsForCounts`.
     - `TestValidate_RejectsCroreMagnitudeError`.
   - Proof: `go test -race -run Validate ./internal/report/...`
-- [ ] **M6.5 `RenderLLM` and fallback wiring**
+- [x] **M6.5 `RenderLLM` and fallback wiring**
   - Files: `internal/report/llm.go` (the prompt carries only the facts JSON: car data and numeric results, no session ID, no free text; logs only a hash and length), `internal/jobs/runner.go` (uses `RenderLLM` when `LLM_ENABLED`; `prose_source`).
   - Tests:
     - `TestRenderLLM_ValidProseIsUsed`.
@@ -610,11 +610,11 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestRenderLLM_PromptHasNoSessionIDOrPersonalFields`.
     - `TestRunner_LLMDisabledUsesTemplateAndNeverCallsClient`.
   - Proof: `go test -race ./internal/report/... ./internal/jobs/...`
-- [ ] **M6.6 Rate limits on LLM-backed paths**
+- [x] **M6.6 Rate limits on LLM-backed paths**
   - Files: `internal/http/router.go` (separate per-session and per-IP limits on `POST /simulations`, which is what triggers prose generation), plus config keys.
   - Tests (integration): `TestRateLimit_PerIP429`, `TestRateLimit_PerSession429`, `TestRateLimit_RedisDownFailsOpenForReadsClosedForSimStarts`.
   - Proof: `go test -race -tags=integration -run RateLimit ./...`
-- [ ] **M6.7 Manual smoke test and phase docs**
+- [x] **M6.7 Manual smoke test and phase docs** *(done: the developer runs the real-key smoke test)*
   - Files: `scripts/llm-smoke/main.go` (the developer runs it with a real key; it prints `prose_source`).
   - Learning note: **`docs/learning/06-gemini-llm-fact-validation.md`**. Covers interfaces for testability, the decorator pattern, `httptest`, `errors.As` with value error types, regexp extraction, why the LLM never decides. Ends with 3 questions.
   - Proof: `LLM_ENABLED=true GEMINI_API_KEY=… GEMINI_MODEL=gemini-3.5-flash-lite go run ./scripts/llm-smoke` (the developer runs this).

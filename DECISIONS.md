@@ -469,3 +469,50 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 
 ### D-M5-11 — The demo client is a Go program (`scripts/demo`), with `demo.sh` as a wrapper
 - **Why:** Plan.md M7.7 imagined a bash + curl + jq script, but jq isn't on the development machine (Windows), and a Go program runs identically everywhere Go does. It drives the whole flow, including SSE, and was used to check M5 end to end on the Docker stack. *(Deviation from Plan.md, moved forward from M7.)*
+
+---
+
+## M6 — Gemini
+
+### D-M6-1 — SDK and model re-checked at the start of M6
+- **Result:** still `google.golang.org/genai v1.76.0` (v1.77.0 is less than two weeks old on 2026-11-07) and `GEMINI_MODEL=gemini-3.5-flash-lite` (Stable). Nothing changed since D-P-18. The model stays env-only: there's no default in code.
+
+### D-M6-2 — `llm.Client` is the exact interface from SPEC §13, with a fake and two wrappers
+- **Decision:** `GenerateText` and `GenerateJSON` (structured output through `ResponseMIMEType: application/json` + `ResponseJsonSchema`). `llm.Fake` scripts responses and records requests. The production stack is `Cached → Budget → Gemini`.
+- **Why:** tests never call the real API (SPEC §13). Putting the cache outermost means a cache hit costs no daily quota.
+
+### D-M6-3 — Gemini call settings
+- **Decision:**
+  - A per-call `context.WithTimeout` (20 s).
+  - `HTTPRetryOptions{Attempts: 2}` (the original call plus at most one retry) on `429, 500, 502, 503, 504` only, with backoff.
+  - `MaxOutputTokens` from config, `Temperature 0.2`, `ThinkingLevelMinimal`.
+  - `FinishReasonMaxTokens` → `ErrOutputTruncated`.
+  - `genai.APIError` is checked with `errors.As` against a **value** target.
+- **Why:** these follow SPEC §13 exactly. Reading the SDK source showed that nil retry options mean *no* retry, and that `Attempts` counts the first call. A low temperature with minimal thinking suits "rephrase these facts", which needs no creativity or reasoning.
+- **Tests:** all against an `httptest` server through `HTTPOptions.BaseURL`. They prove exactly 2 calls on persistent 429, 1 call on 400, the timeout, truncation, JSON decoding, and that the key travels in the `x-goog-api-key` header, never the URL (where proxies would log it).
+
+### D-M6-4 — The fact validator is precision-aware
+- **Decision:** every number in the prose is extracted with its context: currency (₹/Rs/INR, lakh/crore/k), percent, ordinal, or plain number, including number words ("two", "five"). Its **precision** comes from how it is written: "₹1.02 lakh" → ±₹500; "about ₹1 lakh" → ±₹1 lakh (hedged = a full unit); "₹1,00,000" → trailing zeros count as rounding.
+  - Rupee amounts must match a rupee fact, percentages a probability, plain numbers any fact.
+  - The allowed values include every number written in the fact strings (pros, tipping sentences), so the LLM may quote them.
+- **Car names:** the labels of the report's own cars are removed first, since names like "1.2 MT" or "40 kWh" contain digits that aren't facts. Then any other catalogue make or model still present is a violation.
+- **Verdict:** for a deadlock, phrases such as "clear winner" or "best choice" are violations; for a winner report, the prose must name the winner. That enforces "the engine decides; the LLM only writes prose" (SPEC §1).
+- **Why:** SPEC §9.4's example (₹1,02,340 → "about ₹1 lakh" accepted) needs rounding awareness. A fixed percentage tolerance would accept "₹1.5 lakh" for ₹1,02,340 or reject "about ₹1 lakh". Any violation discards the prose and uses the template.
+
+### D-M6-5 — Only a reduced copy of the facts reaches Gemini
+- **Decision:** `toLLMFacts` sends labels, probabilities, cost percentiles, safety ratings, pro/con texts and tipping sentences. It does **not** send the session or run ID, the seed, the user's state, usage answers or loan details. Logs carry only a SHA-256 prefix and the byte length of the prompt, never the prompt or the key.
+- **Why:** SPEC §13: never send personal data, and never log prompts or the key. `TestRenderLLM_PromptHasNoPersonalOrRunFields` checks the prompt.
+
+### D-M6-6 — Prose is generated in the worker's analysis step, outside the transaction
+- **Why:** an LLM call can take up to 20 s and must never hold a database transaction open (D-M5-4). The result (LLM or template) is in the draft before the completion transaction starts; `prose_source` records which one was used.
+
+### D-M6-7 — "LLM-backed endpoints" are rate limited at the simulation start, plus a daily budget
+- **Decision:** prose is generated inside the job, so the HTTP route that triggers LLM use is `POST /sessions/:id/simulations`, already limited per session and per IP (D-M4-10; a per-IP test was added). On top, `llm.Budget` caps calls per UTC day (`LLM_DAILY_MAX_CALLS`). Over the cap, the template is used. If Redis is down, the budget refuses calls, so the system fails closed.
+- *(Plan.md D16.)*
+
+### D-M6-8 — Works fully with `LLM_ENABLED=false` (the default)
+- **Decision:** the worker's `proseWriter` returns nil, the Analyzer then renders templates only, and Gemini is never created or contacted. A none_fit report never calls the LLM (`TestRunner_LLMDisabledUsesTemplateAndNeverCallsClient`).
+- **Real-key check:** `go run ./scripts/llm-smoke` (the developer runs it) sends fictional facts and prints whether the prose passed the validator.
+
+### D-M6-9 — P2 uses (free-text usage parsing, brochure import) stay deferred
+- **Why:** D-P-5. `GenerateJSON` with a response schema is implemented and tested, so both features can be built on it in an optional M8 without changing `internal/llm`.
