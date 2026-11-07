@@ -49,6 +49,14 @@ func main() {
 // run dispatches to a subcommand. It takes everything from the outside world
 // (args, environment, logger) as parameters, so tests can call it directly.
 func run(ctx context.Context, args []string, getenv func(string) string, logger *slog.Logger) error {
+	// With no arguments, TIEBREAKER_MODE picks the subcommand. That lets one
+	// image run as api or worker on platforms that set env vars per service
+	// but run the image's entrypoint unchanged (the runtime image has no shell).
+	if len(args) == 0 {
+		if mode := getenv("TIEBREAKER_MODE"); mode != "" {
+			args = []string{mode}
+		}
+	}
 	if len(args) == 0 {
 		return errUsage
 	}

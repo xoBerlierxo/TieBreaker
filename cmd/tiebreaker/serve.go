@@ -31,6 +31,12 @@ const (
 
 // serve runs the HTTP API until ctx is cancelled.
 func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
+	if cfg.MigrateOnStart {
+		if err := store.MigrateUp(ctx, cfg.DatabaseURL); err != nil {
+			return err
+		}
+		logger.Info("migrations applied on start")
+	}
 	db, err := store.OpenPostgres(ctx, cfg.DatabaseURL, logger)
 	if err != nil {
 		return err
@@ -57,17 +63,18 @@ func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 	sessions.SetNoneFitHook(report.OnNoneFit)
 
 	router := httpapi.NewRouter(httpapi.Deps{
-		Logger:       logger,
-		Postgres:     store.PostgresPinger{DB: db},
-		Redis:        store.RedisPinger{Client: rdb},
-		MaxBodyBytes: cfg.HTTP.MaxBodyBytes,
-		JWTSecret:    cfg.JWTSecret,
-		Catalog:      cat,
-		Sessions:     sessions,
-		Simulations:  sessions,
-		Reports:      report.NewService(db),
-		Progress:     jobs.RedisProgress{Client: rdb},
-		Limiter:      store.NewRateLimiter(rdb),
+		Logger:             logger,
+		Postgres:           store.PostgresPinger{DB: db},
+		Redis:              store.RedisPinger{Client: rdb},
+		MaxBodyBytes:       cfg.HTTP.MaxBodyBytes,
+		JWTSecret:          cfg.JWTSecret,
+		CORSAllowedOrigins: cfg.HTTP.CORSAllowedOrigins,
+		Catalog:            cat,
+		Sessions:           sessions,
+		Simulations:        sessions,
+		Reports:            report.NewService(db),
+		Progress:           jobs.RedisProgress{Client: rdb},
+		Limiter:            store.NewRateLimiter(rdb),
 		SimLimits: httpapi.SimLimits{
 			PerSession: cfg.RateLimit.SimPerSession,
 			PerIP:      cfg.RateLimit.SimPerIP,

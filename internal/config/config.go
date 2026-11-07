@@ -24,6 +24,10 @@ type Config struct {
 	DatabaseURL string
 	RedisURL    string
 	JWTSecret   string
+	// MigrateOnStart makes `serve` apply pending migrations before listening
+	// (for platforms without a reliable pre-deploy step; safe with several
+	// instances because golang-migrate takes an advisory lock).
+	MigrateOnStart bool
 
 	HTTP      HTTPConfig
 	LLM       LLMConfig
@@ -40,8 +44,9 @@ type Config struct {
 
 // HTTPConfig holds server-level limits.
 type HTTPConfig struct {
-	MaxBodyBytes  int64
-	ShutdownGrace time.Duration
+	MaxBodyBytes       int64
+	ShutdownGrace      time.Duration
+	CORSAllowedOrigins []string
 }
 
 // LLMConfig configures the optional Gemini integration (SPEC §13).
@@ -103,14 +108,16 @@ func Load(getenv func(string) string) (Config, error) {
 	p := parser{getenv: getenv}
 
 	cfg := Config{
-		AppEnv:      p.str("APP_ENV", "development"),
-		HTTPAddr:    p.str("HTTP_ADDR", ":8080"),
-		DatabaseURL: p.required("DATABASE_URL"),
-		RedisURL:    p.required("REDIS_URL"),
-		JWTSecret:   p.required("JWT_SECRET"),
+		AppEnv:         p.str("APP_ENV", "development"),
+		HTTPAddr:       p.str("HTTP_ADDR", defaultAddr(getenv("PORT"))),
+		DatabaseURL:    p.required("DATABASE_URL"),
+		RedisURL:       p.required("REDIS_URL"),
+		JWTSecret:      p.required("JWT_SECRET"),
+		MigrateOnStart: p.boolean("MIGRATE_ON_START", false),
 		HTTP: HTTPConfig{
-			MaxBodyBytes:  p.int64Min("HTTP_MAX_BODY_BYTES", 1<<20, 1),
-			ShutdownGrace: p.seconds("SHUTDOWN_GRACE_SECONDS", 20),
+			MaxBodyBytes:       p.int64Min("HTTP_MAX_BODY_BYTES", 1<<20, 1),
+			ShutdownGrace:      p.seconds("SHUTDOWN_GRACE_SECONDS", 20),
+			CORSAllowedOrigins: p.list("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3000"}),
 		},
 		LLM: LLMConfig{
 			Enabled:         p.boolean("LLM_ENABLED", false),
@@ -213,6 +220,14 @@ func (c Config) LogValue() slog.Value {
 		slog.String("sim_quick_timeout", c.Sim.QuickTimeout.String()),
 		slog.String("llm_timeout", c.LLM.Timeout.String()),
 	)
+}
+
+// defaultAddr listens on $PORT when a platform (Railway, Heroku-style) sets it.
+func defaultAddr(port string) string {
+	if port = strings.TrimSpace(port); port != "" {
+		return ":" + port
+	}
+	return ":8080"
 }
 
 // redactURL replaces the password in a URL with "xxxxx". If the string isn't a
@@ -334,6 +349,21 @@ func (p *parser) seconds(key string, def int) time.Duration {
 
 func (p *parser) millis(key string, def int) time.Duration {
 	return time.Duration(p.intMin(key, def, 1)) * time.Millisecond
+}
+
+// list parses a comma-separated list of strings (empty items dropped).
+func (p *parser) list(key string, def []string) []string {
+	v, ok := p.lookup(key)
+	if !ok {
+		return slices.Clone(def)
+	}
+	var out []string
+	for _, part := range strings.Split(v, ",") {
+		if s := strings.TrimSpace(part); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // ladder parses a comma-separated list of rupee rungs. The rungs must start at

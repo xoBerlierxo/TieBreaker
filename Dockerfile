@@ -24,4 +24,5 @@ COPY --from=build /out/tiebreaker /tiebreaker
 USER nonroot:nonroot
 EXPOSE 8080
 ENTRYPOINT ["/tiebreaker"]
-CMD ["serve"]
+# No default CMD: pass a subcommand (serve | worker | migrate up | …) or set
+# TIEBREAKER_MODE=serve|worker (used on Railway, one image for both services).

@@ -19,6 +19,8 @@ type Deps struct {
 	MaxBodyBytes int64
 	JWTSecret    string
 
+	CORSAllowedOrigins []string // browser origins allowed to call the API
+
 	Catalog     CatalogService    // nil: catalogue routes are not mounted
 	Sessions    SessionService    // nil: session routes are not mounted
 	Simulations SimulationService // nil: simulation routes are not mounted
@@ -44,6 +46,7 @@ func NewRouter(d Deps) *gin.Engine {
 	_ = r.SetTrustedProxies(nil)
 
 	r.Use(
+		cors(d.CORSAllowedOrigins),
 		requestID(),
 		accessLog(d.Logger),
 		recovery(d.Logger),

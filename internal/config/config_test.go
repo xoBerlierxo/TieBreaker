@@ -244,3 +244,17 @@ func TestConfig_LogValueRedactsSecrets(t *testing.T) {
 		}
 	}
 }
+
+func TestLoad_PortFallbackAndMigrateOnStart(t *testing.T) {
+	cfg, err := Load(env(with(required(), "PORT", "7777", "MIGRATE_ON_START", "true")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.HTTPAddr != ":7777" || !cfg.MigrateOnStart {
+		t.Errorf("HTTPAddr=%q MigrateOnStart=%v, want :7777 and true", cfg.HTTPAddr, cfg.MigrateOnStart)
+	}
+	cfg, _ = Load(env(with(required(), "PORT", "7777", "HTTP_ADDR", ":9000")))
+	if cfg.HTTPAddr != ":9000" {
+		t.Errorf("explicit HTTP_ADDR should win over PORT, got %q", cfg.HTTPAddr)
+	}
+}

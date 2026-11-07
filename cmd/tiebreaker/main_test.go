@@ -30,6 +30,19 @@ func TestRun_NoSubcommandReturnsUsageError(t *testing.T) {
 	}
 }
 
+func TestRun_ModeFromEnvironment(t *testing.T) {
+	getenv := func(k string) string {
+		if k == "TIEBREAKER_MODE" {
+			return "migrate"
+		}
+		return ""
+	}
+	// "migrate" with no direction proves the env var selected the subcommand.
+	if err := run(context.Background(), nil, getenv, discardLogger()); !errors.Is(err, errUsage) || !strings.Contains(err.Error(), "direction") {
+		t.Fatalf("err = %v, want the migrate usage error", err)
+	}
+}
+
 func TestRun_MigrateWithoutDirectionIsUsageError(t *testing.T) {
 	err := run(context.Background(), []string{"migrate"}, emptyEnv, discardLogger())
 	if !errors.Is(err, errUsage) {
