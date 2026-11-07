@@ -1,0 +1,131 @@
+{
+  "model_version": "sim-v1",
+  "assumptions": [
+    {
+      "key": "fuel_price.petrol.DL",
+      "value": {
+        "inr_per_litre": 100
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "fuel_price.diesel.DL",
+      "value": {
+        "inr_per_litre": 90
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "fuel_price.cng.DL",
+      "value": {
+        "inr_per_kg": 80
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "electricity_tariff.DL",
+      "value": {
+        "inr_per_kwh": 7
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "public_charging_tariff.DL",
+      "value": {
+        "inr_per_kwh": 18
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "road_tax.DL.rule",
+      "value": {
+        "petrol": [
+          {
+            "up_to_inr": 1000000,
+            "rate": 0.1
+          },
+          {
+            "up_to_inr": null,
+            "rate": 0.12
+          }
+        ],
+        "diesel": [
+          {
+            "up_to_inr": 1000000,
+            "rate": 0.1
+          },
+          {
+            "up_to_inr": null,
+            "rate": 0.12
+          }
+        ],
+        "cng": [
+          {
+            "up_to_inr": 1000000,
+            "rate": 0.1
+          },
+          {
+            "up_to_inr": null,
+            "rate": 0.12
+          }
+        ],
+        "strong_hybrid": [
+          {
+            "up_to_inr": 1000000,
+            "rate": 0.1
+          },
+          {
+            "up_to_inr": null,
+            "rate": 0.12
+          }
+        ],
+        "ev": [
+          {
+            "up_to_inr": null,
+            "rate": 0.0
+          }
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "registration_misc.DL",
+      "value": {
+        "inr": 15000
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "used_transfer.DL.rule",
+      "value": {
+        "rate": 0.02,
+        "fixed_inr": 5000
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    }
+  ]
+}

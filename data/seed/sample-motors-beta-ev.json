@@ -1,0 +1,166 @@
+{
+  "variants": [
+    {
+      "slug": "sample-motors-beta-ev-40",
+      "make": "Sample Motors",
+      "model": "Beta EV",
+      "variant_name": "40 kWh (fictional)",
+      "body_type": "compact_suv",
+      "fuel_type": "ev",
+      "ex_showroom_price_inr": 1400000,
+      "launch_year": 2023,
+      "discontinued_year": null,
+      "claimed_efficiency": null,
+      "efficiency_unit": null,
+      "battery_kwh": 40.0,
+      "claimed_range_km": 400,
+      "safety_rating_stars": 5,
+      "safety_rating_body": "Sample NCAP (placeholder)",
+      "airbags": 6,
+      "boot_litres": 350,
+      "ground_clearance_mm": 190,
+      "power_ps": 130.0,
+      "kerb_weight_kg": 1400,
+      "transmission": "single_speed",
+      "seats": 5,
+      "service_interval_km": 15000,
+      "warranty_years": 3,
+      "warranty_km": 100000,
+      "key_features": [
+        "rear_camera",
+        "6_airbags",
+        "esc",
+        "connected_car"
+      ],
+      "verified": false,
+      "sources": [
+        {
+          "field_name": "make",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "model",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "variant_name",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "body_type",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "fuel_type",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "launch_year",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "transmission",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "seats",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "ex_showroom_price_inr",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "battery_kwh",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "claimed_range_km",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "safety_rating_stars",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "airbags",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "power_ps",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "kerb_weight_kg",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "service_interval_km",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "warranty_years",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "warranty_km",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        },
+        {
+          "field_name": "key_features",
+          "source_url": "https://example.invalid/placeholder",
+          "checked_at": "2026-11-07",
+          "note": "PLACEHOLDER: fictional sample car; replace with a real variant and a real source"
+        }
+      ]
+    }
+  ]
+}
