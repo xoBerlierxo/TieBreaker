@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/xoBerlierxo/TieBreaker/internal/catalog"
 	"github.com/xoBerlierxo/TieBreaker/internal/config"
 	httpapi "github.com/xoBerlierxo/TieBreaker/internal/http"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
@@ -51,6 +52,8 @@ func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		Postgres:     store.PostgresPinger{DB: db},
 		Redis:        store.RedisPinger{Client: rdb},
 		MaxBodyBytes: cfg.HTTP.MaxBodyBytes,
+		JWTSecret:    cfg.JWTSecret,
+		Catalog:      catalog.NewService(db),
 	})
 
 	return runHTTPServer(ctx, cfg.HTTPAddr, router, cfg.HTTP.ShutdownGrace, logger, nil)

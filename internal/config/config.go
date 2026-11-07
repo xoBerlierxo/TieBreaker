@@ -132,6 +132,9 @@ func Load(getenv func(string) string) (Config, error) {
 	if !slices.Contains(validAppEnvs, cfg.AppEnv) {
 		p.fail("APP_ENV must be one of %v, got %q", validAppEnvs, cfg.AppEnv)
 	}
+	if cfg.AppEnv == "production" && len(cfg.JWTSecret) < 32 {
+		p.fail("JWT_SECRET must be at least 32 characters in production")
+	}
 	if n := len(cfg.Interview.Ladder); n > 0 && cfg.Interview.LadderCap <= cfg.Interview.Ladder[n-1] {
 		p.fail("INTERVIEW_LADDER_CAP (%d) must be greater than the top ladder rung (%d)",
 			cfg.Interview.LadderCap, cfg.Interview.Ladder[n-1])

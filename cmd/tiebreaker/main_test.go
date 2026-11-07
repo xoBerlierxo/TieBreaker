@@ -30,6 +30,20 @@ func TestRun_NoSubcommandReturnsUsageError(t *testing.T) {
 	}
 }
 
+func TestRun_MigrateWithoutDirectionIsUsageError(t *testing.T) {
+	err := run(context.Background(), []string{"migrate"}, emptyEnv, discardLogger())
+	if !errors.Is(err, errUsage) {
+		t.Fatalf("run(migrate) error = %v, want errUsage", err)
+	}
+}
+
+func TestRun_MigrateNeedsOnlyDatabaseURL(t *testing.T) {
+	err := run(context.Background(), []string{"migrate", "up"}, emptyEnv, discardLogger())
+	if err == nil || !strings.Contains(err.Error(), "DATABASE_URL") || strings.Contains(err.Error(), "REDIS_URL") {
+		t.Fatalf("run(migrate up) error = %v, want only a DATABASE_URL error", err)
+	}
+}
+
 func TestRun_ServeWithMissingConfigReturnsConfigError(t *testing.T) {
 	err := run(context.Background(), []string{"serve"}, emptyEnv, discardLogger())
 	if err == nil || !strings.Contains(err.Error(), "DATABASE_URL") {
@@ -114,5 +128,24 @@ func TestServe_InFlightRequestFinishesDuringShutdown(t *testing.T) {
 	}
 	if err := <-done; err != nil {
 		t.Fatalf("runHTTPServer returned %v, want nil", err)
+	}
+}
+
+func TestAdminTokenCmd_PrintsAJWT(t *testing.T) {
+	var out strings.Builder
+	getenv := func(k string) string {
+		if k == "JWT_SECRET" {
+			return "a-test-secret-that-is-long-enough-123456"
+		}
+		return ""
+	}
+	if err := adminTokenCmd([]string{"-ttl", "5m"}, getenv, &out); err != nil {
+		t.Fatal(err)
+	}
+	if parts := strings.Split(strings.TrimSpace(out.String()), "."); len(parts) != 3 {
+		t.Errorf("output %q is not a JWT", out.String())
+	}
+	if err := adminTokenCmd(nil, emptyEnv, &out); err == nil {
+		t.Error("missing JWT_SECRET accepted")
 	}
 }

@@ -85,6 +85,7 @@ func TestLoad_AppliesSpecDefaults(t *testing.T) {
 func TestLoad_OverridesFromEnv(t *testing.T) {
 	cfg, err := Load(env(with(required(),
 		"APP_ENV", "production",
+		"JWT_SECRET", "a-production-secret-that-is-at-least-32-chars",
 		"HTTP_ADDR", ":9090",
 		"SIM_FULL_FUTURES", "20000",
 		"SIM_WORKERS", "4",
@@ -110,6 +111,13 @@ func TestLoad_OverridesFromEnv(t *testing.T) {
 	}
 	if len(cfg.Interview.Ladder) != 3 || cfg.Interview.Ladder[2] != 20000 || cfg.Interview.LadderCap != 40000 {
 		t.Errorf("ladder override not applied: %v cap %d", cfg.Interview.Ladder, cfg.Interview.LadderCap)
+	}
+}
+
+func TestLoad_ProductionRequiresLongJWTSecret(t *testing.T) {
+	_, err := Load(env(with(required(), "APP_ENV", "production", "JWT_SECRET", "short")))
+	if err == nil || !strings.Contains(err.Error(), "JWT_SECRET") {
+		t.Fatalf("err = %v, want JWT_SECRET length error", err)
 	}
 }
 

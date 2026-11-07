@@ -23,7 +23,7 @@ import (
 )
 
 // errUsage means the command line was wrong; main exits with code 2 for it.
-var errUsage = errors.New("usage: tiebreaker <serve|worker>")
+var errUsage = errors.New("usage: tiebreaker <serve|worker|migrate up|down|version|admin-token|verify-run>")
 
 func main() {
 	// ctx is cancelled on Ctrl+C (SIGINT) or SIGTERM (what Docker and Railway
@@ -51,6 +51,14 @@ func main() {
 func run(ctx context.Context, args []string, getenv func(string) string, logger *slog.Logger) error {
 	if len(args) == 0 {
 		return errUsage
+	}
+
+	// Subcommands that don't need the full app config.
+	switch args[0] {
+	case "migrate":
+		return migrateCmd(ctx, args[1:], getenv, logger)
+	case "admin-token":
+		return adminTokenCmd(args[1:], getenv, os.Stdout)
 	}
 
 	var cmd func(context.Context, config.Config, *slog.Logger) error

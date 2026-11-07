@@ -43,6 +43,12 @@ func statusFor(err error) (status int, code string) {
 		return http.StatusConflict, "SESSION_VERSION_CONFLICT"
 	case errors.Is(err, apperr.ErrIllegalTransition):
 		return http.StatusConflict, "ILLEGAL_STATE_TRANSITION"
+	case errors.Is(err, apperr.ErrConflict):
+		return http.StatusConflict, "CONFLICT"
+	case errors.Is(err, apperr.ErrUnauthorized):
+		return http.StatusUnauthorized, "UNAUTHORIZED"
+	case errors.Is(err, apperr.ErrForbidden):
+		return http.StatusForbidden, "FORBIDDEN"
 	case errors.Is(err, apperr.ErrPreconditionRequired):
 		return http.StatusPreconditionRequired, "PRECONDITION_REQUIRED"
 	case errors.Is(err, apperr.ErrIdempotencyMismatch):
@@ -102,6 +108,7 @@ func publicMessage(err error, status int) string {
 		apperr.ErrIllegalTransition, apperr.ErrPreconditionRequired,
 		apperr.ErrIdempotencyMismatch, apperr.ErrRateLimited,
 		apperr.ErrUnavailable, apperr.ErrPayloadTooLarge,
+		apperr.ErrConflict, apperr.ErrUnauthorized, apperr.ErrForbidden,
 	} {
 		if errors.Is(err, kind) {
 			return kind.Error()

@@ -16,6 +16,9 @@ type Deps struct {
 	Postgres     Pinger
 	Redis        Pinger
 	MaxBodyBytes int64
+	JWTSecret    string
+
+	Catalog CatalogService // nil: catalogue routes are not mounted
 }
 
 // NewRouter builds the Gin engine with the standard middleware and all routes.
@@ -43,6 +46,18 @@ func NewRouter(d Deps) *gin.Engine {
 	}
 	r.GET("/healthz", health.healthz)
 	r.GET("/readyz", health.readyz)
+
+	v1 := r.Group("/v1")
+	admin := r.Group("/admin/v1", requireAdmin(d.JWTSecret, d.Logger))
+
+	if d.Catalog != nil {
+		vh := variantHandler{logger: d.Logger, catalog: d.Catalog}
+		v1.GET("/variants", vh.search)
+		v1.GET("/variants/:id", vh.get)
+		admin.POST("/variants", vh.create)
+		admin.PUT("/variants/:id", vh.update)
+		admin.DELETE("/variants/:id", vh.remove)
+	}
 
 	return r
 }
