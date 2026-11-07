@@ -16,7 +16,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xoBerlierxo/TieBreaker/internal/decision"
 	"github.com/xoBerlierxo/TieBreaker/internal/jobs"
+	"github.com/xoBerlierxo/TieBreaker/internal/report"
 	"github.com/xoBerlierxo/TieBreaker/internal/session"
 )
 
@@ -50,7 +52,10 @@ func startWorker(t *testing.T) func() {
 	t.Helper()
 	w := &jobs.Worker{
 		ID: "test-worker-" + session.NewID()[:6], DB: itDB, Queue: jobs.NewQueue(itDB, 10*time.Second, 3),
-		Runner: jobs.SimRunner{Workers: 2}, Finalizer: session.Finalizer{}, Publisher: jobs.RedisPublisher{Client: itRedis},
+		Runner: jobs.SimRunner{Workers: 2, Analyze: report.Analyzer{
+			Thresholds: decision.Thresholds{WinPBest: 0.55, WinGap: 0.15}, QuickFutures: 1000, ChunkSize: 1000,
+		}.Analyze},
+		Finalizer: session.Finalizer{OnDone: report.OnRunDone}, Publisher: jobs.RedisPublisher{Client: itRedis},
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), PollInterval: 50 * time.Millisecond,
 		Heartbeat: 200 * time.Millisecond, ShutdownGrace: time.Second,
 	}

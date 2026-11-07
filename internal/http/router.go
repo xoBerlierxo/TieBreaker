@@ -22,6 +22,7 @@ type Deps struct {
 	Catalog     CatalogService    // nil: catalogue routes are not mounted
 	Sessions    SessionService    // nil: session routes are not mounted
 	Simulations SimulationService // nil: simulation routes are not mounted
+	Reports     ReportService     // nil: report routes are not mounted
 	Progress    ProgressSource
 	Limiter     Limiter // nil: no rate limiting
 	SimLimits   SimLimits
@@ -98,6 +99,12 @@ func NewRouter(d Deps) *gin.Engine {
 		if d.Progress != nil {
 			v1.GET("/simulations/:id/events", simh.events)
 		}
+	}
+
+	if d.Reports != nil {
+		rh := reportHandler{logger: d.Logger, reports: d.Reports}
+		v1.GET("/sessions/:id/report", rh.forSession)
+		r.GET("/r/:shareId", rh.shared)
 	}
 
 	return r

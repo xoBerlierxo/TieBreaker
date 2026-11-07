@@ -24,6 +24,7 @@ import (
 	"github.com/xoBerlierxo/TieBreaker/internal/catalog"
 	"github.com/xoBerlierxo/TieBreaker/internal/interview"
 	"github.com/xoBerlierxo/TieBreaker/internal/jobs"
+	"github.com/xoBerlierxo/TieBreaker/internal/report"
 	"github.com/xoBerlierxo/TieBreaker/internal/session"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
 	"github.com/xoBerlierxo/TieBreaker/internal/testutil"
@@ -89,11 +90,12 @@ func runIntegration(m *testing.M) int {
 		FullFutures: 5000,
 	}, store.QuickSimCache{Client: rdb, TTL: time.Hour, Logger: logger}, logger)
 	itRedis = rdb
+	sessions.SetNoneFitHook(report.OnNoneFit)
 
 	itDeps = Deps{
 		Logger: logger, Postgres: store.PostgresPinger{DB: db}, Redis: store.RedisPinger{Client: rdb},
 		MaxBodyBytes: 1 << 20, JWTSecret: testJWTSecret, Catalog: cat, Sessions: sessions,
-		Simulations: sessions, Progress: jobs.RedisProgress{Client: rdb}, Limiter: store.NewRateLimiter(rdb),
+		Simulations: sessions, Reports: report.NewService(db), Progress: jobs.RedisProgress{Client: rdb}, Limiter: store.NewRateLimiter(rdb),
 		SimLimits: SimLimits{PerSession: 3, PerIP: 1000, Window: time.Hour},
 	}
 	itRouter = NewRouter(itDeps)

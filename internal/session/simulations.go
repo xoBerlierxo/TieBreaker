@@ -46,6 +46,7 @@ type RunContext struct {
 	PlaceholderCnt int                     `json:"placeholder_assumptions"`
 	HorizonYears   int                     `json:"horizon_years"`
 	Ladder         interview.Ladder        `json:"ladder"`
+	FuelTrendSweep [2]float64              `json:"fuel_trend_sweep"` // μ range for tipping points
 }
 
 // StartSimulation queues a full simulation (SPEC §11, §12): in one
@@ -100,7 +101,8 @@ func (s *Service) runContext(ctx context.Context, snap snapshot, b InputsBuild, 
 		Attributes: b.Attributes, Tradeoffs: view.Tradeoffs, Usage: usage, Constraints: c,
 		Warnings: b.Warnings, Assumptions: set.Provenance, PlaceholderCnt: len(set.UnverifiedKeys()),
 		HorizonYears: b.Inputs.HorizonYears, Ladder: s.cfg.Interview.Ladder,
-		Eliminated: []CarView{},
+		FuelTrendSweep: [2]float64{set.FuelTrendSweep.Lo, set.FuelTrendSweep.Hi},
+		Eliminated:     []CarView{},
 	}
 	for _, sc := range b.Cars {
 		v := sc.Variant

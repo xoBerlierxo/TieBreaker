@@ -59,6 +59,8 @@ func run(ctx context.Context, args []string, getenv func(string) string, logger 
 		return migrateCmd(ctx, args[1:], getenv, logger)
 	case "admin-token":
 		return adminTokenCmd(args[1:], getenv, os.Stdout)
+	case "verify-run":
+		return verifyRunCmd(ctx, args[1:], getenv, os.Stdout, logger)
 	}
 
 	var cmd func(context.Context, config.Config, *slog.Logger) error

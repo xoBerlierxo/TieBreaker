@@ -24,7 +24,7 @@ type RunOutput struct {
 
 // AnalyzeFunc runs extra pure computation after the main simulation (M5 uses
 // it for tipping points). It reports progress 0–100 for its own share.
-type AnalyzeFunc func(ctx context.Context, p Payload, res sim.Result, sum decision.Summary, progress func(pct int)) (any, error)
+type AnalyzeFunc func(ctx context.Context, run Run, p Payload, res sim.Result, sum decision.Summary, progress func(pct int)) (any, error)
 
 // SimRunner runs a stored full simulation: decode inputs_json, run the engine
 // with the stored seed, summarise, and build the result rows.
@@ -57,7 +57,7 @@ func (r SimRunner) Run(ctx context.Context, run Run, progress func(int)) (Outcom
 
 	out := RunOutput{Payload: p, Result: res, Summary: sum}
 	if r.Analyze != nil {
-		out.Analysis, err = r.Analyze(ctx, p, res, sum, func(pct int) { progress(simShare + pct*(99-simShare)/100) })
+		out.Analysis, err = r.Analyze(ctx, run, p, res, sum, func(pct int) { progress(simShare + pct*(99-simShare)/100) })
 		if err != nil {
 			return Outcome{}, err
 		}

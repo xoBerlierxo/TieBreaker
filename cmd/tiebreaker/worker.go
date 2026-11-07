@@ -6,7 +6,9 @@ import (
 	"os"
 
 	"github.com/xoBerlierxo/TieBreaker/internal/config"
+	"github.com/xoBerlierxo/TieBreaker/internal/decision"
 	"github.com/xoBerlierxo/TieBreaker/internal/jobs"
+	"github.com/xoBerlierxo/TieBreaker/internal/report"
 	"github.com/xoBerlierxo/TieBreaker/internal/session"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
 )
@@ -36,11 +38,15 @@ func worker(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 	}()
 
 	w := &jobs.Worker{
-		ID:            workerID(),
-		DB:            db,
-		Queue:         jobs.NewQueue(db, cfg.Jobs.Lease, cfg.Jobs.MaxAttempts),
-		Runner:        jobs.SimRunner{Workers: cfg.Sim.Workers},
-		Finalizer:     session.Finalizer{},
+		ID:    workerID(),
+		DB:    db,
+		Queue: jobs.NewQueue(db, cfg.Jobs.Lease, cfg.Jobs.MaxAttempts),
+		Runner: jobs.SimRunner{Workers: cfg.Sim.Workers, Analyze: report.Analyzer{
+			Thresholds:   decision.Thresholds{WinPBest: cfg.Decision.WinPBest, WinGap: cfg.Decision.WinGap},
+			QuickFutures: cfg.Sim.QuickFutures,
+			ChunkSize:    cfg.Sim.ChunkSize,
+		}.Analyze},
+		Finalizer:     session.Finalizer{OnDone: report.OnRunDone},
 		Publisher:     jobs.RedisPublisher{Client: rdb},
 		Logger:        logger,
 		PollInterval:  cfg.Jobs.PollInterval,

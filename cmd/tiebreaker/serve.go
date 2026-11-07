@@ -14,6 +14,7 @@ import (
 	httpapi "github.com/xoBerlierxo/TieBreaker/internal/http"
 	"github.com/xoBerlierxo/TieBreaker/internal/interview"
 	"github.com/xoBerlierxo/TieBreaker/internal/jobs"
+	"github.com/xoBerlierxo/TieBreaker/internal/report"
 	"github.com/xoBerlierxo/TieBreaker/internal/session"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
 )
@@ -53,6 +54,7 @@ func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 	cat := catalog.NewService(db)
 	sessions := session.NewService(db, cat, sessionConfig(cfg),
 		store.QuickSimCache{Client: rdb, TTL: time.Hour, Logger: logger}, logger)
+	sessions.SetNoneFitHook(report.OnNoneFit)
 
 	router := httpapi.NewRouter(httpapi.Deps{
 		Logger:       logger,
@@ -63,6 +65,7 @@ func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		Catalog:      cat,
 		Sessions:     sessions,
 		Simulations:  sessions,
+		Reports:      report.NewService(db),
 		Progress:     jobs.RedisProgress{Client: rdb},
 		Limiter:      store.NewRateLimiter(rdb),
 		SimLimits: httpapi.SimLimits{
