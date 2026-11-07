@@ -360,17 +360,17 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
 
 **Acceptance (SPEC §20):** shortlist, constraints, usage questions, bracket ladder, adaptive selection; idempotency and `If-Match` integration tests pass.
 
-- [ ] **M3.1 Migrations 0004–0007 and ID generator**
+- [x] **M3.1 Migrations 0004–0007 and ID generator**
   - Files: `migrations/0004_create_sessions.*`, `0005_create_shortlist_items.*`, `0006_create_answers.*`, `0007_create_idempotency_keys.*`, `internal/session/id.go` (16 bytes from `crypto/rand` → base64url, 22 characters, used for sessions, share links and runs).
   - Tests:
     - `TestNewID_22CharsURLSafe`, `TestNewID_NoCollisionsIn100k`.
     - Integration: `TestMigrations_UpDownUpIsClean` (extended), `TestShortlist_CheckUsedFieldsRequired`, `TestAnswers_UniquePerQuestion`.
   - Proof: `go test -race -tags=integration ./internal/session/... ./internal/store/...`
-- [ ] **M3.2 Session domain and state machine**
+- [x] **M3.2 Session domain and state machine**
   - Files: `internal/session/session.go`, `internal/session/state.go` (transition table), `internal/session/errors.go`.
   - Tests: `TestTransition_AllowedPairs`, `TestTransition_EveryOtherPairIsIllegal` (exhaustive over all state pairs).
   - Proof: `go test -race ./internal/session/...`
-- [ ] **M3.3 Optimistic locking, create/get session, ETag/If-Match**
+- [x] **M3.3 Optimistic locking, create/get session, ETag/If-Match**
   - Files: `internal/session/repo.go` (`UpdateWithVersion`), `internal/session/service.go` (`Create(user_state)`, `Get`), `internal/http/sessions.go`, `internal/http/ifmatch.go`.
   - Tests:
     - `TestParseIfMatch` (table: `"3"`, `3`, `W/"3"`, missing → 412, garbage → 400).
@@ -378,7 +378,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestGetSession_SetsETag`.
     - Integration: `TestStaleIfMatch_Returns409`.
   - Proof: `go test -race ./internal/http/... && go test -race -tags=integration ./internal/session/...`
-- [ ] **M3.4 Shortlist (new and used)**
+- [x] **M3.4 Shortlist (new and used)**
   - Files: `internal/session/shortlist.go`, `internal/http/cars.go`.
   - Tests:
     - `TestAddCar_RejectsFifth`.
@@ -389,7 +389,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestAddCar_OnlyInShortlisting`.
     - `TestRemoveCar_RequiresIfMatch`.
   - Proof: `go test -race ./internal/session/... ./internal/http/...`
-- [ ] **M3.5 On-road price, hard constraints and elimination**
+- [x] **M3.5 On-road price, hard constraints and elimination**
   - Files: `internal/session/pricing.go` (ex-showroom + road tax + registration/misc, or the override; used = asking price + transfer cost), `internal/session/constraints.go` (`Evaluate` → survivors plus eliminations `{constraint, required, actual, shortfall}`), `internal/http/constraints.go`.
   - Tests:
     - `TestOnRoad_UsesOverrideWhenSet`, `TestOnRoad_AddsRoadTaxAndRegistration`.
@@ -399,7 +399,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestConstraints_AllEliminatedMovesToDone`.
     - `TestConstraints_OneSurvivorSkipsTradeoffs`.
   - Proof: `go test -race ./internal/session/...`
-- [ ] **M3.6 Usage questions, answers, idempotency (main integration tests)**
+- [x] **M3.6 Usage questions, answers, idempotency (main integration tests)** *(done: the concurrency/idempotency integration tests are full-stack in `internal/http/integration_test.go`, D-M3-12)*
   - Files: `internal/interview/usage.go` (fixed order: state (already answered from the session), km/month range, city % range, ownership years, financing, parking (optional)), `internal/session/answers.go`, `internal/session/idempotency.go` (in-transaction claim, canonical-JSON SHA-256 request hash), `internal/http/answers.go`, `internal/http/next_question.go` (usage phase).
   - Tests:
     - `TestUsageQuestions_FixedOrder`.
@@ -413,7 +413,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
       - `TestConcurrentAnswers_ExactlyOneSucceeds` (two goroutines released by a barrier, same `If-Match` → one 2xx, one 409, one answer row).
       - `TestConcurrentSameKey_OneRowBothSameResponse`.
   - Proof: `go test -race -tags=integration -run 'Idempotency|Concurrent|IfMatch' ./...`
-- [ ] **M3.7 Trade-off candidates and shares**
+- [x] **M3.7 Trade-off candidates and shares**
   - Files: `internal/interview/attributes.go` (scales for safety, boot, ground clearance, performance, automatic, `feature:<key>`, warranty), `internal/interview/features.go` (vocabulary allow-list), `internal/interview/question_text.go`.
   - Tests:
     - `TestCandidates_NeverIncludesAttributeWhereAllEqual` (table per attribute).
@@ -423,7 +423,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestShares_BestIsOneWorstIsZeroMiddleLinear`.
     - `TestQuestionText_UsesHorizonAndCarNames`.
   - Proof: `go test -race ./internal/interview/...`
-- [ ] **M3.8 Bracket ladder**
+- [x] **M3.8 Bracket ladder**
   - Files: `internal/interview/ladder.go`.
   - Tests:
     - `TestLadder_StartsAt1L`.
@@ -432,7 +432,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestLadder_PartialStopGivesWideBracket`.
     - `TestLadder_CustomRungsAndCap`.
   - Proof: `go test -race ./internal/interview/...`
-- [ ] **M3.9 Sim inputs, adaptive selection, stop rules, quick-sim cache**
+- [x] **M3.9 Sim inputs, adaptive selection, stop rules, quick-sim cache**
   - Files: `internal/session/inputs.go` (database rows + `AssumptionSet` → `sim.Inputs`, plus a canonical inputs hash), `internal/interview/selector.go` (prior vs. bracket sims, information gain, candidates evaluated in parallel with `errgroup`, seed derived from the session), `internal/interview/stop.go`, `internal/interview/cache.go` (interface), `internal/store/quicksim_cache.go` (Redis, 1 h TTL), `internal/interview/fallback.go` (fixed priority order used if the 2 s timeout is hit).
   - Tests:
     - `TestEntropy_KnownValues`.
@@ -443,14 +443,14 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestSelector_CacheHitSkipsSimulation` (counting fake).
     - `TestInputsHash_StableAcrossMapOrder`.
   - Proof: `go test -race ./internal/interview/... ./internal/session/...`
-- [ ] **M3.10 `next-question` trade-off phase, end to end, and latency check**
+- [x] **M3.10 `next-question` trade-off phase, end to end, and latency check** *(done: p95 70 ms with no cache)*
   - Files: `internal/http/next_question.go` (trade-off phase, `{done:true}`), `internal/interview/bench_test.go`.
   - Tests:
     - Integration: `TestInterview_FullFlowReachesDone` (sample variants → shortlist → constraints → usage → ladder answers → `done`).
     - `TestNextQuestion_NeverAsksEqualAttribute`.
     - `BenchmarkNextQuestion_3cars` (target p95 < 1.5 s).
   - Proof: `go test -race -tags=integration -run Interview ./... && go test -run=^$ -bench=NextQuestion ./internal/interview/`
-- [ ] **M3.11 Phase docs**
+- [x] **M3.11 Phase docs**
   - Update `DECISIONS.md` and `FLOW.md` (request → handler → service → `WithTx` → repo, for answers).
   - Learning note: **`docs/learning/03-sessions-locking-idempotency-interview.md`**. Covers optimistic locking vs `SELECT FOR UPDATE`, READ COMMITTED re-checking the `WHERE` clause, unique-index idempotency, `crypto/rand`, ETags, entropy and information gain, common random numbers. Ends with 3 questions.
 

@@ -2,7 +2,7 @@
 
 This file follows the path a program run or a request takes through the files and functions. Each milestone adds its flows. Function names are written `package.Function`, with the file in brackets.
 
-Status: **M2 (engine)**. Startup, health checks, shutdown, migrations, seeding, the catalogue and the simulation engine are covered.
+Status: **M3 (sessions + interview)**. Startup, health checks, shutdown, migrations, seeding, the catalogue, the engine, sessions and the adaptive interview are covered.
 
 ---
 
@@ -182,7 +182,74 @@ decision.Summarize(result)                          [internal/decision/summary.g
  └─ PBest (ties split) · PCheapest · percentiles (type 7) · median per category · Leader · Entropy (bits)
 ```
 
-## 11. Tests and where they plug in
+## 11. Session lifecycle (HTTP → `session.Service`)
+
+```
+POST /v1/sessions {"user_state":"TN"}
+ └─ sessionHandler.create [internal/http/sessions.go] → Service.Create [internal/session/service.go]
+      NewID() (128 random bits, base64url) → INSERT sessions (state SHORTLISTING, version 1) → View; ETag: "1"
+
+POST /v1/sessions/:id/cars        (If-Match)     → Service.AddCar
+PUT  /v1/sessions/:id/constraints (If-Match)     → Service.SetConstraints
+DELETE /v1/sessions/:id/cars/:itemId (If-Match)  → Service.RemoveCar
+ └─ parseIfMatch ("3", 3, W/"3"; missing → 412)
+ └─ Service.mutate(ctx, id, version, fn)
+     └─ store.WithTx
+         ├─ bumpVersion: UPDATE sessions SET version=version+1 WHERE id=? AND version=? RETURNING …
+         │     0 rows → 404 (missing) or 409 SESSION_VERSION_CONFLICT (stale)
+         └─ fn(tx, session):
+              AddCar:         RequireState(SHORTLISTING) → count < 4 → BuildItem [pricing.go] → INSERT (duplicate → 409)
+              SetConstraints: 2–4 cars → LoadAssumptionSet → PriceOf each car [pricing.go]
+                              → Constraints.Validate(hasEV) → Evaluate [constraints.go] → write eliminations
+                              → survivors? setState(USAGE) : setState(DONE) (+ none-fit hook, M5)
+ └─ Service.Get → load (session, items, answers, variants) → view [view.go] → ETag
+```
+
+## 12. Answers (idempotent + optimistic locking)
+
+```
+POST /v1/sessions/:id/answers   (Idempotency-Key + If-Match)
+ └─ sessionHandler.submitAnswer → Service.SubmitAnswer [internal/session/answers.go]
+     RequestHash(body) (canonical JSON → SHA-256)
+     store.WithTx:
+       1. INSERT idempotency_keys … ON CONFLICT DO NOTHING
+            existing key: different hash → 422 | same hash → replay stored status + exact bytes (Idempotent-Replayed: true)
+       2. bumpVersion (stale If-Match → 409)
+       3. applyAnswer by state:
+            USAGE:     must be NextUsageQuestion → interview.ValidateUsageAnswer → INSERT answer
+                       → all usage answered? setState(INTERVIEW)
+            INTERVIEW: snapshot.tradeoffState() → interview.Candidates(survivors)
+                       → interview.ValidateTradeoffAnswer (in-progress ladder first, feature cap, 10-question limit)
+                       → INSERT answer {attribute, step, threshold_inr, yes}
+       4. UPDATE idempotency_keys SET response_status, response_json (text, exact bytes)
+     any error → rollback (including the key)
+```
+
+## 13. Next question (adaptive interview)
+
+```
+GET /v1/sessions/:id/next-question
+ └─ Service.NextQuestion
+     SHORTLISTING → 409 | USAGE → interview.NextUsageQuestion (fixed order) | SIMULATING/DONE → done
+     INTERVIEW:
+       buildFromSnapshot → BuildInputs [internal/session/inputs.go]
+            survivors + AssumptionSet + usage + constraints → sim.Inputs; Candidates(survivors); warnings
+       base = inputs without preferences; seed = interview.SeedFor(sessionID)
+       context.WithTimeout(QuickTimeout = 2 s)
+       interview.Planner.NextTradeoff [internal/interview/planner.go]
+         ├─ limit reached? → done(max_questions)
+         ├─ QuickSimulator.PBest(current state) [quicksim.go] (Redis cache → sim.Run(workers=1) → decision.PBest)
+         │     leader ≥ 0.65 → done(leader_confident)
+         ├─ ladder in progress → next step (Ladder.NextThreshold) [ladder.go]
+         ├─ open candidates (unasked, feature cap) empty → done(no_candidates)
+         ├─ informationGains: errgroup over candidates; per candidate 1 mixture sim + 6 bracket sims;
+         │     gain = H(mixture) − mean H(bracket) (bits)
+         ├─ best gain < 0.02 → done(low_information_gain)
+         └─ question = step 1 of the best candidate at ₹1L (QuestionText with car names and horizon)
+       deadline hit → first open candidate in priority order (fell_back: true, logged)
+```
+
+## 14. Tests and where they plug in
 
 | Flow | How it is tested without real infrastructure |
 |---|---|
@@ -193,3 +260,5 @@ decision.Summarize(result)                          [internal/decision/summary.g
 | catalogue (integration) | `TestMain` starts Postgres, runs `store.MigrateUp`; each test `TRUNCATE`s the catalogue tables |
 | catalogue handlers | `fakeCatalog` implements `httpapi.CatalogService` |
 | engine | plain `sim.Run` calls on fixtures (`handInputs`, `stochasticInputs`); goleak in `TestMain` |
+| interview | `Planner` with real quick sims on fictional inputs; `countingCache`; an expired deadline for the fallback |
+| sessions over HTTP (integration) | `internal/http/integration_test.go`: real router + services + Postgres + Redis + seed data |

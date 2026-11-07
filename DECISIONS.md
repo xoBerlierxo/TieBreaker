@@ -298,3 +298,61 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 
 ### D-M2-13 — Assumption key `service.default_interval_km` added
 - **Why:** a variant with no service interval still needs one to simulate. The fallback value belongs in the assumptions table (SPEC §10: every assumption lives there), not hard-coded, and a data warning is shown when it is used.
+
+---
+
+## M3 — Sessions and interview
+
+### D-M3-1 — Optimistic locking with one `UPDATE … WHERE version = ? RETURNING`
+- **Decision:** every change to a session starts with `UPDATE sessions SET version = version + 1 WHERE id = ? AND version = ? RETURNING …` inside the transaction (`Service.mutate`). If no row comes back, a follow-up read tells 404 (session missing) apart from 409 (`SESSION_VERSION_CONFLICT`, with `current_version` in the details).
+- **Why:** the UPDATE both checks the version and takes the row lock in one statement, so two concurrent writers are serialised. Under READ COMMITTED, the second writer waits for the first to commit, then re-evaluates its `WHERE` clause against the new row, finds the version has changed, and gets 409. Because the bump happens *first*, the rest of the work runs only for the winner. Any later error rolls the bump back.
+
+### D-M3-2 — Idempotency key is claimed in the same transaction, before the version check
+- **Decision:** `INSERT INTO idempotency_keys … ON CONFLICT DO NOTHING`. If the key already exists, the request hash is compared: a different body gets 422, the same body gets the stored response (status and exact bytes) with `Idempotent-Replayed: true`. Only then does the version bump run.
+- **Why:**
+  - **Before the version check:** a client retrying after a lost response still has the old `If-Match`; it must get the original 201, not a 409. `TestIdempotency_ReplayAfterVersionMovedReturnsStored` covers this.
+  - **Same transaction:** if a second request with the same key arrives while the first is in flight, Postgres makes its INSERT wait on the unique index until the first commits. It then replays the committed response (`TestConcurrentSameKey_OneRowBothSameResponse`).
+  - **Failures roll back the key**, so a 400 or 409 never gets stuck on a key; the client can fix the request and retry with it.
+- **Request hash:** SHA-256 of canonical JSON (decoded with `UseNumber`, re-encoded with sorted keys), so whitespace and key order don't matter.
+
+### D-M3-3 — The stored idempotent response is `text`, not `jsonb`
+- **Why:** found by `TestIdempotency_SameKeySameBodyReturnsSameResponseOneRow`. `jsonb` normalises key order and spacing, so a replay returned different bytes than the original response. "Same response" should mean byte-identical, so `response_json` is a `text` column holding the exact bytes. (A change to migration 0007 before any release.)
+
+### D-M3-4 — Answers are the source of truth for interview progress
+- **Decision:** there is no interview-state column. Usage answers are rows like `usage:km_per_month`; each ladder step is its own row `tradeoff:<attribute>:<step>`, holding `{attribute, step, threshold_inr, yes}`. `TradeoffState` and the brackets are rebuilt by replaying these rows in insertion order.
+- **Why:** there is nothing to keep in sync. The unique `(session_id, question_id)` is a second guard against double answers. The SPEC §5.3 bracket format (`{attribute, min_inr, max_inr}`) is computed for the session view.
+
+### D-M3-5 — Answer validation follows the interview's rules, but doesn't recompute the question choice
+- **Decision:**
+  - Usage questions must be answered in their fixed order.
+  - A trade-off answer is accepted for the next step of the ladder in progress, or, when no ladder is in progress, for step 1 of any not-yet-asked candidate (respecting the feature cap and the 10-question limit).
+- **Why:** re-running the information-gain selection on every POST would double the cost for no safety gain. A client choosing a different valid candidate harms nobody, and "real differences only" is still enforced.
+
+### D-M3-6 — The user's state is collected when the session is created (Plan.md D2)
+- **Why:** the budget constraint uses the on-road price, which needs state road tax, and constraints come before the usage questions. The usage "state" question is therefore not asked again.
+
+### D-M3-7 — Prices for the budget check vs. the engine
+- **Decision:**
+  - **New car:** on-road = ex-showroom + road tax (state slab) + registration/misc, excluding insurance (D-P-11). An on-road override replaces it.
+  - **Used car:** the budget compares the asking price (SPEC §6.2); the engine's upfront cost adds transfer costs (rate × price + fixed).
+  - The value basis for insurance and resale is ex-showroom (new) or asking price (used).
+
+### D-M3-8 — Interview seed per session and a 2 s quick-sim timeout with a fallback
+- **Decision:** every quick simulation in one interview uses `FNV64a("interview:"+sessionID)` as its seed, so all comparisons are on the same futures. `next-question` runs under `context.WithTimeout(QuickTimeout)`. If the deadline expires, the first open candidate in fixed priority order is asked and `fell_back: true` is returned and logged.
+- **Why:** SPEC §11 requires a strict timeout. The user should never be blocked by a slow machine; a sensible question beats an error.
+
+### D-M3-9 — Quick-sim cache in Redis; errors count as misses
+- **Decision:** the key is `quicksim:` + SHA-256(inputs JSON, seed, futures, model version), with a 1 h TTL. A Redis error is logged and treated as a cache miss.
+- **Why:** the cache only speeds things up, so it must never fail a request. The model version in the key means an engine change can't serve stale results.
+
+### D-M3-10 — Parallel candidate evaluation; quick sims single-threaded
+- **Decision:** `informationGains` runs one goroutine per candidate (`errgroup.SetLimit(GOMAXPROCS)`), and each quick sim runs with `Workers=1`. Each goroutine clones the preference slice before appending to it.
+- **Why:** this keeps every core busy without oversubscribing it. The clone avoids a data race: `append` on a slice shared between goroutines can write into the same backing array.
+- **Measured:** about 57 ms per call (p95 70 ms) with no cache for 3 cars × 9 candidates (64 quick sims). The target is 1.5 s.
+
+### D-M3-11 — Shared rupee formatting in `internal/money`
+- **Why:** interview questions and reports must show the same number the same way (₹1,02,340 and "₹1.02 lakh"). Plan.md put this in `report/format.go`; it moved to its own package because `interview` needs it first.
+
+### D-M3-12 — The spec's session integration scenarios run over real HTTP
+- **Decision:** `internal/http/integration_test.go` wires the real router and services to real Postgres and Redis. It checks stale `If-Match` → 409, missing → 412, idempotency replay and 422, concurrent submissions, the shortlist rules, none-fit, and a full interview. *(Plan.md listed these under the session package; testing them through HTTP also covers the status-code mapping and headers.)*
+- **Test plumbing:** the unit-test `TestMain` lives in `main_unit_test.go` (`//go:build !integration`), because a package can have only one `TestMain` per build.

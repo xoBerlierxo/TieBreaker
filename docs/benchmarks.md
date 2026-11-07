@@ -25,7 +25,7 @@ go test -run='^$' -bench=Benchmark -benchmem ./internal/sim/
 |---|---|---|
 | Quick simulation, 3 cars × 2,000 futures: p95 < 150 ms | p95 7.4 ms (1 worker) | ✅ about 20× under |
 | Full simulation, 3 cars × 50,000 futures: < 5 s on 4 cores | 33 ms (4 workers) | ✅ about 150× under |
-| `next-question` p95 < 1.5 s | measured in M3 (`BenchmarkNextQuestion_3cars`) | — |
+| `next-question` p95 < 1.5 s | **70 ms** p95, 57 ms mean, with no cache (3 cars × 9 candidates = 64 quick sims, `BenchmarkNextQuestion_3cars`) | ✅ about 20× under |
 
 ### Notes
 
