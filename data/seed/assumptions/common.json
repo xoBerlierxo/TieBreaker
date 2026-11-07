@@ -436,6 +436,16 @@
       "checked_at": null,
       "verified": false,
       "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "service.default_interval_km",
+      "value": {
+        "value": 10000
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
     }
   ]
 }

@@ -143,6 +143,7 @@ type AssumptionSet struct {
 	IDVSchedule          []float64                        `json:"idv_schedule"`
 	ServiceCostPerVisit  map[Segment]map[FuelType]float64 `json:"service_cost_per_visit"`
 	ServiceMinVisits     float64                          `json:"service_min_visits_per_year"`
+	ServiceDefaultKm     float64                          `json:"service_default_interval_km"`
 	GeneralInflation     float64                          `json:"general_inflation"`
 	Repairs              RepairModel                      `json:"repairs"`
 	Tyres                TyreModel                        `json:"tyres"`
@@ -266,6 +267,7 @@ func specsFor(state string) []assumptionSpec {
 	})
 	add("service.cost_per_visit", into(func(s *AssumptionSet) any { return &s.ServiceCostPerVisit }))
 	add("service.min_visits_per_year", field("value", func(s *AssumptionSet) *float64 { return &s.ServiceMinVisits }))
+	add("service.default_interval_km", field("value", func(s *AssumptionSet) *float64 { return &s.ServiceDefaultKm }))
 	add("general_inflation.rate", field("value", func(s *AssumptionSet) *float64 { return &s.GeneralInflation }))
 	add("repairs.model", into(func(s *AssumptionSet) any { return &s.Repairs }))
 	add("tyres.model", into(func(s *AssumptionSet) any { return &s.Tyres }))
@@ -343,6 +345,7 @@ func (s AssumptionSet) validate() []error {
 	check(s.ChargingEfficiency > 0 && s.ChargingEfficiency <= 1, "charging efficiency must be in (0, 1]")
 	check(s.KmYearSigma >= 0, "km_year_sigma must not be negative")
 	check(s.ServiceMinVisits >= 0, "service min visits must not be negative")
+	check(s.ServiceDefaultKm > 0, "service default interval must be positive")
 	check(s.EVBatteryWearPerYear >= 0 && s.EVBatteryWearPerYear < 1, "battery wear must be in [0, 1)")
 	check(len(s.IDVSchedule) > 0, "idv schedule must not be empty")
 	check(s.Tyres.LifeKm > 0, "tyre life must be positive")
