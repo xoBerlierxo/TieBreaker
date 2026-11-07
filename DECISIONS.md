@@ -188,3 +188,56 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
   - Only slow queries (> 200 ms) and errors are logged, through slog, with placeholders instead of values (`ParameterizedQueries`), because values may contain user answers (SPEC §13).
   - `TranslateError` turns driver errors into `gorm.ErrDuplicatedKey` etc., so repositories can use `errors.Is`.
   - Timestamps are UTC.
+
+---
+
+## M1 — Catalogue
+
+### D-M1-1 — Migrations are embedded and run by `tiebreaker migrate`, plus a one-shot Compose service
+- **Decision:** `migrations/embed.go` embeds `*.sql`. `store.MigrateUp` uses golang-migrate with the `iofs` source and the `pgx/v5` database driver, over a dedicated `database/sql` connection. Compose runs `migrate up` once; `api` and `worker` wait for `service_completed_successfully`.
+- **Why:** containers and Railway don't need the migrate CLI or the files on disk. golang-migrate's advisory lock makes concurrent runs safe. The `pgx/v5` driver avoids pulling in `lib/pq` next to pgx. The `migrate` subcommand reads only `DATABASE_URL`, so it can run before the rest of the config exists.
+
+### D-M1-2 — Database CHECK constraints *and* Go validation
+- **Decision:** every rule on `variants` is enforced twice: as a SQL `CHECK` (the last line of defence, which also covers manual SQL) and in `Variant.Validate()`, which gives friendly field-level errors.
+- **Why:** a constraint violation from Postgres is a poor API error. Validation without constraints lets bad data in through any other path.
+
+### D-M1-3 — One `Variant` struct for the GORM model, the seed format and the admin API body
+- **Why:** there is one source of truth for field names (explicit `gorm:"column:…"` and `json:"…"` tags on every field). The API adds derived fields and warnings through `httpapi.VariantDTO`, which embeds `Variant`. Nullable data is a pointer field, so "unknown" is never confused with zero.
+
+### D-M1-4 — `store.TextArray` for `text[]`, built on pgx's own codec
+- **Why:** GORM has no array type, and `database/sql` can't scan an array into `[]string`. Delegating to `pgtype.Map.SQLScanner` reuses pgx's tested array parser instead of hand-writing one. Writing works because pgx's `database/sql` driver accepts a `[]string` value.
+
+### D-M1-5 — `catalog.Date` for "checked on" dates
+- **Why:** seed files are typed by hand, and `"2026-11-07"` is much friendlier than an RFC 3339 timestamp. The type implements JSON and SQL (un)marshalling for a Postgres `date`.
+
+### D-M1-6 — Placeholders are detectable by rule, not by convention
+- **Decision:** `catalog.IsPlaceholderURL` treats `TODO`, empty, non-http(s), `example.com` and any `.invalid` host as a placeholder. Sample sources use `https://example.invalid/placeholder`; `.invalid` is reserved by RFC 2606 and can never resolve.
+- **Enforcement:** `CanVerify` refuses placeholder sources. The seed loader refuses `verified: true` without real sources. A guard test (`TestSeedRepo_SamplesAreFictionalAndUnverified`) runs over the real `data/seed` and enforces SPEC §7: at most 3 samples, all unverified.
+
+### D-M1-7 — The feature vocabulary lives in Go (`catalog.KnownFeatures`), not in `data/seed/features.json`
+- **Why:** the interview needs it at runtime inside the API binary, and a Go function is simpler than embedding or loading a file. It also can't be mutated (it returns a new slice). *(Deviation from Plan.md M1.4, which listed `features.json`.)*
+
+### D-M1-8 — Assumption keys and typed decoding
+- **Decision:**
+  - The keys follow SPEC §5.1's examples (`fuel_price.petrol.TN`, `electricity_tariff.TN`, `road_tax.TN.rule`, `real_efficiency_factor.petrol`). `docs/model.md` lists all of them.
+  - Each key has its own decode step (`specsFor`), using strict JSON (unknown fields rejected, so `"sigam"` is an error), followed by value validation.
+  - All missing or invalid keys are reported together.
+- **Why:** the engine must never receive a silent zero from a typo. A strongly typed `AssumptionSet` is also exactly what gets snapshotted into a run.
+
+### D-M1-9 — Seeding is an idempotent upsert in one transaction
+- **Decision:** variants are matched by `slug` (their sources replaced), assumptions by `(key, model_version)` with `ON CONFLICT DO UPDATE`. Everything happens in a single `WithTx`.
+- **Why:** re-running the loader after editing a file must converge, never duplicate. A failure half-way leaves the database unchanged.
+
+### D-M1-10 — Admin JWT details
+- **Decision:**
+  - HS256 only (`WithValidMethods`, which blocks `alg: none` and algorithm confusion).
+  - Issuer `tiebreaker`, audience `tiebreaker-admin`, `exp` and `iat` required, 30 s leeway, lifetime ≤ 1 h (enforced both when minting and when checking).
+  - 401 for any token problem; 403 for a valid token without `role=admin`.
+  - Production requires `JWT_SECRET` to be at least 32 characters.
+- **Why:** these are the standard JWT pitfalls. Rejecting long-lived tokens even when they are correctly signed limits the damage from a leaked token.
+
+### D-M1-11 — New sentinels `ErrConflict` (409), `ErrUnauthorized` (401), `ErrForbidden` (403)
+- **Why:** deleting a variant that is used in a shortlist is a generic conflict, not a session-version conflict. Admin auth needs 401 and 403. All three are still mapped only in `statusFor`.
+
+### D-M1-12 — Search details
+- **Decision:** `ILIKE '%q%'` on exactly the expression the trigram index uses. `%` and `_` in the query are escaped. `limit` defaults to 20, and values outside 1–50 are a 400 (not silently clamped). A malformed UUID returns 404, not a Postgres syntax error.

@@ -221,14 +221,14 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
 
 **Acceptance (SPEC §20):** migrations, seed loader, variant search; unverified-data flag shown.
 
-- [ ] **M1.1 Migration runner + migrations 0001–0003**
+- [x] **M1.1 Migration runner + migrations 0001–0003**
   - Files: `migrations/embed.go` (`//go:embed *.sql`), `migrations/0001_create_variants.{up,down}.sql`, `0002_create_variant_sources.*`, `0003_create_assumptions.*`, `internal/store/migrate.go` (golang-migrate with an `iofs` source), and the `migrate` subcommand in `cmd/tiebreaker`.
   - Tests (integration):
     - `TestMigrations_UpDownUpIsClean`.
     - `TestVariants_CheckConstraintsRejectInvalidRows` (table: unknown `fuel_type`, an EV with no `battery_kwh`, 6 stars, `discontinued_year < launch_year`, 0 seats, a negative price).
     - `TestAssumptions_UniqueKeyPerModelVersion`.
   - Proof: `go test -race -tags=integration ./internal/store/...` and `docker compose run --rm migrate`.
-- [ ] **M1.2 Catalogue domain and validation**
+- [x] **M1.2 Catalogue domain and validation**
   - Files: `internal/catalog/variant.go` (`Variant`, `FuelType`, `Transmission` enums, `Validate()`), `internal/catalog/source.go`, `internal/catalog/verify.go` (`CanVerify`: every non-null field has at least one source), `internal/catalog/derived.go` (PS per tonne; EV km/kWh = claimed range ÷ battery when no efficiency is given).
   - Tests:
     - `TestVariantValidate_Table`.
@@ -238,7 +238,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestEVEfficiency_DerivedFromRangeAndBattery`.
     - `TestIsAutomatic_EverythingExceptManual`.
   - Proof: `go test -race ./internal/catalog/...`
-- [ ] **M1.3 Catalogue repository and search**
+- [x] **M1.3 Catalogue repository and search** *(done: repository and service are combined in `service.go`)*
   - Files: `internal/catalog/repo.go` (GORM; `text[]` mapping for `key_features`), `internal/catalog/service.go` (`Search(ctx, q, fuel, limit)` using trigram `ILIKE` on make+model+variant; `limit` defaults to 20 and is capped at 50; `Get(ctx, id)` includes sources).
   - Tests (integration):
     - `TestSearch_MatchesMakeModelVariantCaseInsensitive`.
@@ -247,7 +247,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestGet_IncludesSourcesAndVerifiedFlag`.
     - `TestGet_UnknownIDReturnsNotFound`.
   - Proof: `go test -race -tags=integration ./internal/catalog/...`
-- [ ] **M1.4 Seed files and loader**
+- [x] **M1.4 Seed files and loader** *(done: the feature vocabulary is `catalog.KnownFeatures()` in Go instead of `features.json`, see D-M1-7)*
   - Files:
     - `data/seed/sample-motors-alpha.json`, `sample-motors-beta-ev.json`, `sample-motors-gamma.json` (fictional, `"verified": false`, placeholder sources). They are built to differ on several interview attributes.
     - `data/seed/features.json` (feature vocabulary with labels).
@@ -261,7 +261,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestAssumptionSeed_EveryKeyPresentForEveryState`.
     - `TestLoadSeed_IdempotentUpsert` (integration: load twice → still 3 rows, sources not duplicated).
   - Proof: `go test -race ./internal/catalog/... && go run ./scripts/seed --dir data/seed`
-- [ ] **M1.5 Typed assumption set**
+- [x] **M1.5 Typed assumption set**
   - Files: `internal/catalog/assumptions.go` (`LoadSet(ctx, state, modelVersion) (AssumptionSet, error)`; typed fields for every key; `Snapshot() json.RawMessage`; `Warnings()` lists placeholder or unverified keys), `internal/catalog/roadtax.go` (slab rule evaluation).
   - Tests:
     - `TestAssumptionSet_ParsesEveryKey`.
@@ -270,7 +270,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestRoadTax_SlabByFuelAndPrice` (table with fictional slab numbers that exist only in the test).
     - `TestSnapshot_RoundTripsExactly`.
   - Proof: `go test -race ./internal/catalog/...`
-- [ ] **M1.6 Catalogue HTTP and admin auth**
+- [x] **M1.6 Catalogue HTTP and admin auth**
   - Files: `internal/http/variants.go`, `internal/http/dto_variant.go` (`verified`, `warnings: ["unverified_data"]`, sources with `checked_at`), `internal/http/auth.go` (HS256 JWT, `role=admin`, `exp` ≤ 15 min, `iss`/`aud` checked), `internal/http/admin_variants.go` (POST, PUT, DELETE), and the `admin-token` subcommand.
   - Tests:
     - `TestVariantsSearch_400OnBadLimit`.
@@ -280,7 +280,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestAdminCreate_ValidatesBody`.
     - `TestAdminSetVerified_RejectedWithoutSources`.
   - Proof: `go test -race ./internal/http/...`, then `curl "localhost:8080/v1/variants?q=alpha&limit=5"` and `curl localhost:8080/v1/variants/<id>`.
-- [ ] **M1.7 Phase docs**
+- [x] **M1.7 Phase docs**
   - `docs/model.md`: a table of every assumption key, with unit, meaning, `PLACEHOLDER` status and `TODO` source.
   - Update `DECISIONS.md` and `FLOW.md`.
   - Learning note: **`docs/learning/01-catalogue-migrations-gorm.md`**. Covers golang-migrate vs AutoMigrate, `embed`, GORM models and `text[]`, `CHECK` constraints, trigram indexes, `json.Decoder.DisallowUnknownFields`, JWT validation. Ends with 3 questions.

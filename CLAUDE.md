@@ -29,7 +29,10 @@ go test -race -run TestLoad_InvalidValues ./internal/config/...          # singl
 go test -race -run 'TestLoad_InvalidValues/zero_futures' ./internal/config/...   # single table case (spaces become _)
 go test -race -tags=integration -run TestWithTx ./internal/store/...     # single integration test
 
-docker compose up -d --build                     # api + worker + postgres + redis, with dev-only defaults
+docker compose up -d --build                     # postgres + redis → one-shot migrate → api + worker
+DATABASE_URL="postgres://tiebreaker:tiebreaker_dev_only@localhost:5432/tiebreaker?sslmode=disable" go run ./scripts/seed
+go run ./scripts/seed --check                    # validate data/seed without a database
+MSYS_NO_PATHCONV=1 docker compose exec -T api /tiebreaker admin-token   # Git Bash rewrites /paths without MSYS_NO_PATHCONV
 curl localhost:8080/healthz ; curl localhost:8080/readyz
 go run ./cmd/tiebreaker serve                    # needs DATABASE_URL, REDIS_URL, JWT_SECRET in the env
 ```

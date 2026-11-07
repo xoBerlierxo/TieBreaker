@@ -2,7 +2,7 @@
 
 This file follows the path a program run or a request takes through the files and functions. Each milestone adds its flows. Function names are written `package.Function`, with the file in brackets.
 
-Status: **M0 (skeleton)**. Startup, health checks and shutdown are covered.
+Status: **M1 (catalogue)**. Startup, health checks, shutdown, migrations, seeding, catalogue search and admin writes are covered.
 
 ---
 
@@ -95,7 +95,66 @@ SIGTERM → root ctx cancelled
 main: stop() releases the signal handler; returns normally (exit code 0)
 ```
 
-## 6. Tests and where they plug in
+## 6. Migrations (`tiebreaker migrate up`, the Compose `migrate` service)
+
+```
+run → migrateCmd(ctx, ["up"], getenv)          [cmd/tiebreaker/migrate.go]   (only DATABASE_URL needed)
+ └─ store.MigrateUp(ctx, dsn)                  [internal/store/migrate.go]
+     └─ withMigrate
+         ├─ sql.Open("pgx", dsn) + PingContext
+         ├─ pgxmigrate.WithInstance(db)         golang-migrate's pgx/v5 driver (takes an advisory lock)
+         ├─ iofs.New(migrations.FS, ".")        the *.sql files embedded by migrations/embed.go
+         ├─ context.AfterFunc(ctx → m.GracefulStop)
+         └─ m.Up()   (ErrNoChange counts as success)
+```
+
+## 7. Seeding (`go run ./scripts/seed --dir data/seed`)
+
+```
+scripts/seed/main.go run()
+ ├─ --check → catalog.ReadSeedDir(dir) only (no database)
+ └─ store.OpenPostgres → catalog.LoadDir(ctx, db, dir)          [internal/catalog/seed.go]
+     ├─ ReadSeedDir
+     │   ├─ data/seed/*.json             → ModelFile{variants} (strict JSON) → checkSeedVariant (Validate + CanVerify if verified)
+     │   └─ data/seed/assumptions/*.json → AssumptionFile (verified requires a real source and checked_at)
+     └─ store.WithTx (all or nothing)
+         ├─ each variant: lookup by slug → insertVariant | replaceVariant   [service.go]   (sources replaced)
+         └─ each assumption: INSERT … ON CONFLICT (key, model_version) DO UPDATE
+```
+
+## 8. Catalogue requests
+
+```
+GET /v1/variants?q=&fuel=&limit=
+ └─ variantHandler.search                       [internal/http/variants.go]
+     ├─ queryInt("limit")                        [internal/http/bind.go]   bad integer → 400
+     ├─ CatalogService.Search → catalog.Service.Search   [internal/catalog/service.go]
+     │    validate q/fuel/limit → WHERE (make||' '||model||' '||variant_name) ILIKE %escaped% → ORDER BY name
+     └─ toVariantDTO: + display_name, is_automatic, efficiency, PS/tonne, warnings [unverified_data, safety_not_rated]
+
+GET /v1/variants/:id
+ └─ variantHandler.get → catalog.Service.Get (malformed UUID → 404; Preload Sources) → toVariantDTO
+
+POST|PUT|DELETE /admin/v1/variants[/:id]
+ └─ requireAdmin(JWT_SECRET)                     [internal/http/auth.go]
+      Bearer token → jwt parser (HS256 only, iss, aud, exp required, ≤ 1 h lifetime) → role == admin (else 403)
+ └─ variantHandler.create|update|remove
+      bindJSON (strict, single value) → catalog.Service.Create|Update|Delete
+        checkWritable: Validate → sources complete → verified needs CanVerify (no placeholder sources)
+        WithTx: insertVariant / lock row FOR UPDATE + replaceVariant / Delete (FK RESTRICT → 409 CONFLICT)
+```
+
+## 9. Assumptions → typed set (used from M3 onwards)
+
+```
+catalog.Service.LoadAssumptionSet(ctx, state, "sim-v1")      [internal/catalog/assumptions.go]
+ ├─ SELECT rows WHERE model_version AND key IN RequiredAssumptionKeys(state)
+ └─ BuildAssumptionSet → for each specsFor(state): strict decode into its typed field → collect provenance
+                       → validate() (positive prices, every fuel/segment present, ranges valid)
+                       → AssumptionSet (+ UnverifiedKeys for warnings, Snapshot for runs)
+```
+
+## 10. Tests and where they plug in
 
 | Flow | How it is tested without real infrastructure |
 |---|---|
@@ -103,3 +162,5 @@ main: stop() releases the signal handler; returns normally (exit code 0)
 | router and middleware | `httpapi.NewRouter(Deps{fakePinger…})` + `httptest.NewRecorder` |
 | server lifecycle | `runHTTPServer(ctx, "127.0.0.1:0", …, onListen)` gets a free port, then the test cancels ctx |
 | store (integration) | `testutil.Postgres/Redis` start real containers once per package in `TestMain` |
+| catalogue (integration) | `TestMain` starts Postgres, runs `store.MigrateUp`; each test `TRUNCATE`s the catalogue tables |
+| catalogue handlers | `fakeCatalog` implements `httpapi.CatalogService` |
