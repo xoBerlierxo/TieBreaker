@@ -294,3 +294,36 @@ func TestSSE_ReconnectCatchesUpFromDatabase(t *testing.T) {
 		t.Fatalf("stream = %s, want the final done event", body)
 	}
 }
+
+func TestRateLimit_SimStartsPerIP429(t *testing.T) {
+	// A router with a per-IP limit of 1: two different sessions from the same IP.
+	deps := itDeps
+	deps.SimLimits = SimLimits{PerSession: 100, PerIP: 1, Window: time.Hour}
+	deps.Limiter = &prefixLimiter{inner: deps.Limiter, prefix: "per-ip-test-" + session.NewID()[:6]}
+	router := NewRouter(deps)
+	start := func(id, ver string) int {
+		req := httptest.NewRequest(http.MethodPost, "/v1/sessions/"+id+"/simulations", nil)
+		req.Header.Set("If-Match", ver)
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id1, ver1 := sessionReadyToSimulate(t)
+	id2, ver2 := sessionReadyToSimulate(t)
+	if code := start(id1, ver1); code != http.StatusAccepted {
+		t.Fatalf("first start: %d", code)
+	}
+	if code := start(id2, ver2); code != http.StatusTooManyRequests {
+		t.Fatalf("second start from the same IP: %d, want 429", code)
+	}
+}
+
+// prefixLimiter isolates this test's counters from the shared Redis keys.
+type prefixLimiter struct {
+	inner  Limiter
+	prefix string
+}
+
+func (p *prefixLimiter) Allow(ctx context.Context, key string, limit int, window time.Duration) (bool, time.Duration, error) {
+	return p.inner.Allow(ctx, p.prefix+key, limit, window)
+}

@@ -5,9 +5,13 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/redis/go-redis/v9"
+
+	"github.com/xoBerlierxo/TieBreaker/internal/catalog"
 	"github.com/xoBerlierxo/TieBreaker/internal/config"
 	"github.com/xoBerlierxo/TieBreaker/internal/decision"
 	"github.com/xoBerlierxo/TieBreaker/internal/jobs"
+	"github.com/xoBerlierxo/TieBreaker/internal/llm"
 	"github.com/xoBerlierxo/TieBreaker/internal/report"
 	"github.com/xoBerlierxo/TieBreaker/internal/session"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
@@ -37,6 +41,11 @@ func worker(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		}
 	}()
 
+	writer, err := proseWriter(ctx, cfg, rdb, catalog.NewService(db), logger)
+	if err != nil {
+		return err
+	}
+
 	w := &jobs.Worker{
 		ID:    workerID(),
 		DB:    db,
@@ -45,6 +54,7 @@ func worker(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 			Thresholds:   decision.Thresholds{WinPBest: cfg.Decision.WinPBest, WinGap: cfg.Decision.WinGap},
 			QuickFutures: cfg.Sim.QuickFutures,
 			ChunkSize:    cfg.Sim.ChunkSize,
+			Writer:       writer,
 		}.Analyze},
 		Finalizer:     session.Finalizer{OnDone: report.OnRunDone},
 		Publisher:     jobs.RedisPublisher{Client: rdb},
@@ -64,4 +74,27 @@ func workerID() string {
 		host = "worker"
 	}
 	return host + "-" + session.NewID()[:8]
+}
+
+// proseWriter builds the optional LLM writer (SPEC §13). With LLM_ENABLED=false
+// it returns nil and every report uses the template. The layering is
+// Cached → Budget → Gemini: a cache hit costs no quota.
+func proseWriter(ctx context.Context, cfg config.Config, rdb *redis.Client, cat *catalog.Service, logger *slog.Logger) (report.ProseWriter, error) {
+	if !cfg.LLM.Enabled {
+		logger.Info("LLM disabled: reports use templates only")
+		return nil, nil
+	}
+	gemini, err := llm.NewGemini(ctx, llm.GeminiConfig{APIKey: cfg.LLM.APIKey, Model: cfg.LLM.Model, Timeout: cfg.LLM.Timeout})
+	if err != nil {
+		return nil, err
+	}
+	client := llm.Cached{
+		Inner: llm.Budget{Inner: gemini, Redis: rdb, DailyMax: cfg.LLM.DailyMaxCalls},
+		Redis: rdb, Model: cfg.LLM.Model, TTL: cfg.LLM.CacheTTL, Logger: logger,
+	}
+	logger.Info("LLM enabled for report prose", slog.String("model", cfg.LLM.Model))
+	return report.LLMWriter{
+		Client: client, Names: cat.AllNames, MaxOutputTokens: int32(cfg.LLM.MaxOutputTokens), // #nosec G115 -- validated range
+		Logger: logger,
+	}, nil
 }

@@ -254,3 +254,23 @@ func insertSources(tx *gorm.DB, variantID string, sources []VariantSource) error
 func escapeLike(s string) string {
 	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
 }
+
+// AllNames returns every make, model and display name in the catalogue. The
+// LLM fact validator uses it to reject prose that names a car not in the report.
+func (s *Service) AllNames(ctx context.Context) ([]string, error) {
+	var rows []Variant
+	if err := s.db.WithContext(ctx).Select("make", "model", "variant_name").Find(&rows).Error; err != nil {
+		return nil, fmt.Errorf("loading catalogue names: %w", err)
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, v := range rows {
+		for _, n := range []string{v.Make, v.Model, v.Make + " " + v.Model, v.DisplayName()} {
+			if !seen[n] {
+				seen[n] = true
+				out = append(out, n)
+			}
+		}
+	}
+	return out, nil
+}

@@ -13,6 +13,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -47,7 +48,7 @@ func (c *client) do(method, path string, body any, headers map[string]string, ou
 		b, _ := json.Marshal(body)
 		rd = bytes.NewReader(b)
 	}
-	req, err := http.NewRequest(method, c.base+path, rd)
+	req, err := http.NewRequestWithContext(context.Background(), method, c.base+path, rd)
 	if err != nil {
 		return 0, err
 	}
@@ -207,7 +208,11 @@ func run(c *client) error {
 
 // stream prints SSE progress events until the run finishes.
 func (c *client) stream(path string) error {
-	res, err := (&http.Client{Timeout: 5 * time.Minute}).Get(c.base + path)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.base+path, nil)
+	if err != nil {
+		return err
+	}
+	res, err := (&http.Client{Timeout: 5 * time.Minute}).Do(req)
 	if err != nil {
 		return err
 	}

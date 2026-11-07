@@ -46,10 +46,13 @@ type HTTPConfig struct {
 
 // LLMConfig configures the optional Gemini integration (SPEC §13).
 type LLMConfig struct {
-	Enabled bool
-	APIKey  string // secret: never logged
-	Model   string // no default in code; see .env.example
-	Timeout time.Duration
+	Enabled         bool
+	APIKey          string // secret: never logged
+	Model           string // no default in code; see .env.example
+	Timeout         time.Duration
+	MaxOutputTokens int
+	DailyMaxCalls   int
+	CacheTTL        time.Duration
 }
 
 // SimConfig configures the Monte Carlo engine (SPEC §10.1, §11).
@@ -110,10 +113,13 @@ func Load(getenv func(string) string) (Config, error) {
 			ShutdownGrace: p.seconds("SHUTDOWN_GRACE_SECONDS", 20),
 		},
 		LLM: LLMConfig{
-			Enabled: p.boolean("LLM_ENABLED", false),
-			APIKey:  p.str("GEMINI_API_KEY", ""),
-			Model:   p.str("GEMINI_MODEL", ""),
-			Timeout: p.seconds("LLM_TIMEOUT_SECONDS", 20),
+			Enabled:         p.boolean("LLM_ENABLED", false),
+			APIKey:          p.str("GEMINI_API_KEY", ""),
+			Model:           p.str("GEMINI_MODEL", ""),
+			Timeout:         p.seconds("LLM_TIMEOUT_SECONDS", 20),
+			MaxOutputTokens: p.intMin("LLM_MAX_OUTPUT_TOKENS", 1024, 64),
+			DailyMaxCalls:   p.intMin("LLM_DAILY_MAX_CALLS", 500, 0),
+			CacheTTL:        time.Duration(p.intMin("LLM_CACHE_TTL_HOURS", 24, 1)) * time.Hour,
 		},
 		Sim: SimConfig{
 			FullFutures:  p.intMin("SIM_FULL_FUTURES", 50000, 1),
