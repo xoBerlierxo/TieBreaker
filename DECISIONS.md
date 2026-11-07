@@ -356,3 +356,60 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 ### D-M3-12 — The spec's session integration scenarios run over real HTTP
 - **Decision:** `internal/http/integration_test.go` wires the real router and services to real Postgres and Redis. It checks stale `If-Match` → 409, missing → 412, idempotency replay and 422, concurrent submissions, the shortlist rules, none-fit, and a full interview. *(Plan.md listed these under the session package; testing them through HTTP also covers the status-code mapping and headers.)*
 - **Test plumbing:** the unit-test `TestMain` lives in `main_unit_test.go` (`//go:build !integration`), because a package can have only one `TestMain` per build.
+
+---
+
+## M4 — Jobs and progress
+
+### D-M4-1 — The queue is the `sim_runs` table, claimed with `FOR UPDATE SKIP LOCKED`
+- **Decision:** `Queue.Claim` selects the oldest row that is `queued`, or `running` with an expired lease, using GORM `clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}`, and marks it `running` in the same transaction.
+- **Why:** SPEC §11 asks for this. Postgres is already the source of truth, so a separate Redis queue would add a second place where a job could be lost or duplicated. `SKIP LOCKED` lets many workers poll at once without blocking each other: a row being claimed by one worker is simply invisible to the others. `TestClaim_ConcurrentClaimersNeverGetSameJob` runs 8 claimers on 20 jobs.
+
+### D-M4-2 — Leases, heartbeats and fencing
+- **Decision:**
+  - A claim sets `lease_expires_at = now() + lease`, using the database clock so workers with skewed clocks still agree.
+  - The worker's heartbeat (every `JOB_HEARTBEAT_MS`, default 1 s) extends the lease and reads `cancel_requested` in the same `UPDATE … RETURNING`.
+  - **Every write by a worker is fenced** with `WHERE id = ? AND worker_id = ? AND status = 'running'`. 0 rows means `ErrLeaseLost`, and the worker drops its work.
+- **Why:** a crashed worker's job must be picked up again (SPEC §11), but a worker that was merely slow, for example after a long GC pause or a network partition, must never overwrite the new owner's result. The tests: `TestClaim_ReclaimsExpiredLease_AndFencesTheOldOwner` and `TestWorkerCrash_LeaseExpiresAnotherWorkerCompletes`.
+- **Exactly-once:** processing is at-least-once (a crash means it runs again), but the *stored result* is exactly-once, because completion and the results insert happen in one fenced transaction (plus primary key `(run_id, shortlist_item_id)`).
+
+### D-M4-3 — Retries are capped; runner errors fail immediately
+- **Decision:** a run whose lease expired is retried up to `JOB_MAX_ATTEMPTS` (default 3), then marked `failed`. An error returned by the runner itself (for example invalid inputs) fails the run immediately, without retry.
+- **Why:** crashes may be transient, but the engine is deterministic: the same inputs fail the same way every time.
+
+### D-M4-4 — Graceful worker shutdown
+- **Decision:** the job's context is derived with `context.WithoutCancel(parent)` and cancelled through `context.WithCancelCause`. On shutdown the job gets `SHUTDOWN_GRACE_SECONDS` to finish; otherwise it is cancelled with cause `errShutdown` and **released** back to the queue (status `queued`, attempt not counted).
+- **Why:** SPEC §14 says "finish or cancel in-flight jobs". A redeploy should neither kill a nearly finished job nor count it as a failed attempt. `context.Cause` tells the reasons apart: cancel requested, shutdown, or lease lost. `TestWorkerShutdown_ReleasesInFlightJob` covers this, with goleak.
+
+### D-M4-5 — Cancel is a flag polled by the heartbeat
+- **Decision:** `POST /simulations/:id/cancel` cancels a queued run at once (session back to INTERVIEW in the same transaction) or sets `cancel_requested` on a running one. The worker's heartbeat sees the flag within about a second and cancels the job's context.
+- **Why:** this is the simplest reliable mechanism and needs no extra pub/sub channel. A full run takes well under a second, so 1 s of cancel latency is fine (`TestCancel_RunningRunStopsWithin2s`).
+
+### D-M4-6 — Progress: Redis pub/sub plus Postgres, throttled
+- **Decision:** the runner reports 0–99 % (100 means done); the throttle sends an update only after ≥ 2 percentage points or 250 ms, and always sends 100. Each update goes to `sim_runs.progress` (fenced) and to Redis channel `run:{id}`.
+- **Why:** SPEC §11 requires both: pub/sub for live updates, Postgres for clients that reconnect. Throttling stops a 50-chunk run from writing 50 times in 30 ms.
+
+### D-M4-7 — SSE: subscribe first, then read the database
+- **Decision:** the `/events` handler confirms the Redis subscription (`ps.Receive`), then reads the current state from Postgres and sends it, then streams updates. It also re-reads Postgres every 5 s (in case a pub/sub message was lost), sends `: ping` every 15 s, and closes the stream after a terminal status or 10 minutes. It lifts the server's 30 s write timeout for that one response with `http.ResponseController.SetWriteDeadline(time.Time{})`.
+- **Why:** reading first could miss an update published in between. Subscribing first can at worst repeat one, which the handler de-duplicates. Pub/sub is fire-and-forget, so the periodic poll keeps the stream correct.
+
+### D-M4-8 — Starting a run: one transaction, assumptions snapshotted
+- **Decision:** `Service.StartSimulation` runs the version bump (If-Match), checks for INTERVIEW, builds the inputs, inserts a queued `sim_runs` row, and moves the session to SIMULATING, all in one transaction.
+  - `inputs_json` = `{inputs: sim.Inputs, context: RunContext}`. Every assumption value is resolved into the inputs, and the context carries the car labels, catalogue data as of now, warnings and assumption provenance for the report.
+  - The seed comes from `crypto/rand`.
+- **Why:** "assumptions are snapshotted into each run" (SPEC §5.1): editing an assumption later never changes a stored run (`TestStartSimulation_SnapshotsAssumptions`).
+- **Double submits** are stopped three ways: a stale version, the wrong state, and a partial unique index (one active full run per session).
+
+### D-M4-9 — Finalizer: the session's state change commits with the run's status
+- **Decision:** `jobs.Finalizer` runs inside the completion (or stop) transaction. `session.Finalizer` moves the session SIMULATING → DONE, or back to INTERVIEW, and bumps its version so open tabs notice. `jobs` doesn't import `session`; they are wired together in `cmd/tiebreaker/worker.go`.
+- **Why:** there is never a done run with a session still "simulating", or the other way round. The interface keeps the package dependencies one-way (session → jobs).
+
+### D-M4-10 — Rate limit on simulation starts: Redis fixed window, fail closed
+- **Decision:** an atomic Lua script (`INCR` + `PEXPIRE` on first use) allows at most 10 starts per session and 30 per IP per hour (configurable). Over the limit → 429 with `Retry-After`. If Redis is down → 503.
+- **Why:** starting a run costs CPU, and in M6 Gemini quota. A fixed window is simple and good enough here. Failing closed protects the workers; reads are never rate-limited.
+
+### D-M4-11 — The seed is stored as `bigint` and shown as a string
+- **Why:** Postgres has no unsigned 64-bit type, so the uint64 is stored bit for bit as int64 (`SeedToDB` / `Run.Seed`, round-trip tested). The API shows it as a decimal string because JavaScript numbers lose precision above 2⁵³.
+
+### D-M4-12 — Results store a 30-bin histogram with shared edges
+- **Why:** the results page (M7) draws all cars on one axis. Bins span the 1st–99th percentile of all cars together, so a few extreme futures don't squash the chart. Values outside go into the end bins.

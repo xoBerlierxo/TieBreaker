@@ -2,7 +2,7 @@
 
 This file follows the path a program run or a request takes through the files and functions. Each milestone adds its flows. Function names are written `package.Function`, with the file in brackets.
 
-Status: **M3 (sessions + interview)**. Startup, health checks, shutdown, migrations, seeding, the catalogue, the engine, sessions and the adaptive interview are covered.
+Status: **M4 (jobs + progress)**. Everything up to the interview, plus starting simulations, the worker, progress over SSE, and cancel.
 
 ---
 
@@ -249,7 +249,63 @@ GET /v1/sessions/:id/next-question
        deadline hit → first open candidate in priority order (fell_back: true, logged)
 ```
 
-## 14. Tests and where they plug in
+## 14. Starting a full simulation
+
+```
+POST /v1/sessions/:id/simulations  (If-Match)
+ └─ rateLimit(sim-session, sim-ip) [internal/http/ratelimit.go] → store.RateLimiter.Allow (Lua INCR+PEXPIRE)
+      over the limit → 429 + Retry-After; Redis down → 503
+ └─ simulationHandler.start [internal/http/simulations.go]
+ └─ session.Service.StartSimulation [internal/session/simulations.go]
+     mutate (version bump) → RequireState(INTERVIEW) → buildFromSnapshot → BuildInputs (sim.Inputs with prefs)
+     → runContext (car labels, catalogue data, eliminated cars, attributes, trade-offs, warnings, assumption provenance)
+     → encodePayload {inputs, context} + inputs hash → seed from crypto/rand
+     → jobs.Insert(tx, run{status queued}) (second active run → 409) → setState(SIMULATING)
+ → 202 {run_id, status_url, events_url}
+```
+
+## 15. The worker (`tiebreaker worker`)
+
+```
+cmd/tiebreaker/worker.go → jobs.Worker{Queue, Runner: SimRunner, Finalizer: session.Finalizer, Publisher: Redis}.Run(ctx)
+ loop:
+   Queue.Claim [internal/jobs/queue.go]
+     WithTx: SELECT … WHERE queued OR (running AND lease expired) ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED
+             attempts ≥ max → failed;  else UPDATE running, worker_id, lease = now()+lease, attempts+1
+   none → sleep(poll interval ± 20 %)
+   process(run) [internal/jobs/worker.go]
+     jobCtx = WithCancelCause(WithoutCancel(workerCtx))
+     goroutine: shutdown watcher → after ShutdownGrace: cancel(errShutdown)
+     goroutine: heartbeat ticker → ExtendLease (UPDATE … RETURNING cancel_requested)
+                   lease lost → cancel(ErrLeaseLost); cancel requested → cancel(errCancelRequested)
+     SimRunner.Run [internal/jobs/runner.go]
+        decode inputs_json → sim.Run(seed, futures, chunk; progress → throttle → SetProgress + PUBLISH run:{id})
+        → decision.Summarize → ResultRows (+ shared histograms) → decision.Fingerprint
+     stop goroutines (WaitGroup) → switch on result / context.Cause:
+        ok            → WithTx: Complete (fenced) + INSERT sim_results + Finalizer.Done (session → DONE)
+        cancel        → WithTx: MarkCancelled (fenced) + Finalizer.Stopped (session → INTERVIEW)
+        shutdown      → Queue.Release (back to queued, attempt not counted)
+        lease lost    → drop the result (another worker owns the run)
+        runner error  → MarkFailed + Finalizer.Stopped
+     → PUBLISH the final event
+```
+
+## 16. Progress (SSE), status and cancel
+
+```
+GET /v1/simulations/:id/events
+ └─ simulationHandler.events
+     GetRun (404 if unknown) → jobs.Subscribe (Redis SUBSCRIBE run:{id}, wait for confirmation)
+     → ResponseController.SetWriteDeadline(none) → headers text/event-stream
+     → send current state from Postgres → loop: Redis event | 5 s Postgres poll | 15 s ": ping"
+     → close after a terminal status (or 10 min)
+
+GET  /v1/simulations/:id        → Service.GetRun (+ sim_results when done; seed as a decimal string)
+POST /v1/simulations/:id/cancel → Service.CancelRun: WithTx + LockRun (FOR UPDATE)
+      queued → cancelled + FinishRun(session → INTERVIEW) | running → cancel_requested = true | finished → 409
+```
+
+## 17. Tests and where they plug in
 
 | Flow | How it is tested without real infrastructure |
 |---|---|
@@ -262,3 +318,5 @@ GET /v1/sessions/:id/next-question
 | engine | plain `sim.Run` calls on fixtures (`handInputs`, `stochasticInputs`); goleak in `TestMain` |
 | interview | `Planner` with real quick sims on fictional inputs; `countingCache`; an expired deadline for the fallback |
 | sessions over HTTP (integration) | `internal/http/integration_test.go`: real router + services + Postgres + Redis + seed data |
+| job queue and worker (integration) | `internal/jobs/jobs_integration_test.go`: fake runners (counting, blocking), recording finalizer, goleak |
+| simulations over HTTP (integration) | `internal/http/simulations_integration_test.go`: a real worker in a goroutine, SSE over `httptest.NewServer` |

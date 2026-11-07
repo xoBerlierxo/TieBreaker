@@ -460,11 +460,11 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
 
 **Acceptance (SPEC §20):** SKIP LOCKED queue, leases, SSE progress, cancel; worker-crash test passes.
 
-- [ ] **M4.1 Migrations 0008–0009 and job model**
+- [x] **M4.1 Migrations 0008–0009 and job model**
   - Files: `migrations/0008_create_sim_runs.*`, `0009_create_sim_results.*`, `internal/jobs/model.go`.
   - Tests (integration): `TestSimRuns_OneActiveFullRunPerSession` (partial unique index), `TestSimResults_UniquePerRunAndItem`.
   - Proof: `go test -race -tags=integration ./internal/jobs/...`
-- [ ] **M4.2 Starting a run, plus rate limits**
+- [x] **M4.2 Starting a run, plus rate limits**
   - Files: `internal/jobs/enqueue.go` (in one `WithTx`: INTERVIEW → SIMULATING, build inputs plus the assumption snapshot into `inputs_json`, `master_seed` from `crypto/rand`, insert a `queued` row), `internal/http/simulations.go` (`202 {run_id}`, `GET /v1/simulations/:id`), `internal/store/ratelimit.go` (Redis fixed window via a Lua `INCR` + `EXPIRE` script), `internal/http/ratelimit.go` (per session and per IP; `Retry-After` header).
   - Tests:
     - Integration:
@@ -474,7 +474,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
       - `TestRateLimiter_FixedWindowAgainstRealRedis`.
     - Unit: `TestRateLimitMiddleware_429WithRetryAfter`.
   - Proof: `go test -race -tags=integration ./internal/jobs/... ./internal/store/...`
-- [ ] **M4.3 Claim, lease, heartbeat and fenced completion**
+- [x] **M4.3 Claim, lease, heartbeat and fenced completion**
   - Files: `internal/jobs/queue.go` (`Claim` with `clause.Locking{Strength:"UPDATE", Options:"SKIP LOCKED"}`, `ExtendLease`, `Complete`, `Fail`, `Release`; every write fenced by `worker_id`).
   - Tests (integration):
     - `TestClaim_ConcurrentClaimersNeverGetSameJob`.
@@ -483,7 +483,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestFail_MarksFailedAfterMaxAttempts`.
     - `TestExtendLease_FailsForNonOwner`.
   - Proof: `go test -race -tags=integration -run Claim\|Complete\|Lease ./internal/jobs/...`
-- [ ] **M4.4 Worker loop and shutdown**
+- [x] **M4.4 Worker loop and shutdown**
   - Files: `internal/jobs/worker.go` (poll with jitter; heartbeat goroutine; runs a `Runner` interface; writes `sim_results` and the session moves to DONE in one transaction; on shutdown it finishes within the grace period or releases the lease), `internal/jobs/runner.go` (the real runner: decodes `inputs_json` → `sim.Run` → `decision.Summarize`), and wiring in `cmd/tiebreaker/worker.go`.
   - Tests (integration):
     - `TestTwoWorkersTenJobs_EachProcessedExactlyOnce` (10 runs, 2 workers → 10 done, 1 result set each, `attempts = 1`).
@@ -491,17 +491,17 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestWorkerShutdown_ReleasesInFlightJob`.
     - `TestWorker_NoGoroutineLeaks` (goleak).
   - Proof: `go test -race -tags=integration -run Worker ./internal/jobs/...`
-- [ ] **M4.5 Progress publishing and SSE**
+- [x] **M4.5 Progress publishing and SSE**
   - Files: `internal/jobs/progress.go` (throttled to ≥ 2 % change or 250 ms; Redis `PUBLISH run:{id}` plus a database `UPDATE progress`), `internal/http/sse.go` (subscribe → read the database row → send the current state → stream → close on a terminal status; `: ping` every 15 s; per-handler deadline).
   - Tests:
     - Unit: `TestProgressThrottle_EmitsOnThresholdAndAlwaysOnComplete`.
     - Integration: `TestSSE_SendsCurrentThenUpdatesThenCloses`, `TestSSE_ReconnectCatchesUpFromDatabase`, `TestSSE_UnknownRun404`.
   - Proof: `go test -race -tags=integration -run SSE ./internal/http/...` and `curl -N localhost:8080/v1/simulations/<id>/events`.
-- [ ] **M4.6 Cancel**
+- [x] **M4.6 Cancel** *(done: cancel logic is in `session.Service.CancelRun`, which owns the session state change)*
   - Files: `internal/jobs/cancel.go` (queued → `cancelled` immediately; running → `cancel_requested = true`; the heartbeat polls it every 1 s → `ctx` cancel → status `cancelled`; session → INTERVIEW), `POST /v1/simulations/:id/cancel`.
   - Tests (integration): `TestCancel_QueuedRunBecomesCancelled`, `TestCancel_RunningRunStopsWithin2s`, `TestCancel_FinishedRun409`, `TestCancel_SessionReturnsToInterview`.
   - Proof: `go test -race -tags=integration -run Cancel ./...`
-- [ ] **M4.7 Phase docs**
+- [x] **M4.7 Phase docs**
   - Update `DECISIONS.md` (SKIP LOCKED vs. a Redis queue, leases and fencing, polling vs. pub/sub for cancel, subscribe-then-read) and `FLOW.md` (POST simulations → worker → SSE).
   - Learning note: **`docs/learning/04-job-queue-skip-locked-sse.md`**. Covers row locks, `SKIP LOCKED`, lease and fencing tokens, at-least-once processing with an effectively-once write, Redis pub/sub, SSE framing, `http.Flusher`, goroutine lifetimes. Ends with 3 questions.
 
