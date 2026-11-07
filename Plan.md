@@ -625,30 +625,30 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
 
 **Acceptance (SPEC §20):** three screens (shortlist, interview, results with histogram); deployed; README with architecture diagram, benchmark numbers and a demo script.
 
-- [ ] **M7.1 Scaffold `/web` and the API client; CORS**
+- [x] **M7.1 Scaffold `/web` and the API client; CORS** *(done: `lint` = `tsc --noEmit`, D-M7-2)*
   - Files: `web/` (Next.js App Router + Tailwind; versions checked to be ≥ 2 weeks old when this task starts), `web/lib/api.ts` (error shape, `If-Match` from the ETag, `Idempotency-Key` via `crypto.randomUUID()` reused on retry), `internal/http/cors.go` (`CORS_ALLOWED_ORIGINS`).
   - Tests:
     - `web/lib/api.test.ts` (vitest): sends `If-Match`; reuses the idempotency key on retry; parses the error shape.
     - Go: `TestCORS_AllowsConfiguredOriginOnly`.
   - Proof: `cd web && npm ci && npm run lint && npm test && npm run build`
-- [ ] **M7.2 Screen 1: shortlist and constraints**
+- [x] **M7.2 Screen 1: shortlist and constraints** *(done: shortlist page is `/s/[id]`; `/` creates the session)*
   - Files: `web/app/page.tsx`, `web/components/{VariantSearch,ShortlistCard,UsedCarForm,ConstraintsForm,UnverifiedBadge}.tsx`.
   - Tests: build passes; manual check through the demo script.
   - Proof: `npm run build` plus a manual run against `docker compose`.
-- [ ] **M7.3 Screen 2: interview**
+- [x] **M7.3 Screen 2: interview**
   - Files: `web/app/s/[id]/interview/page.tsx`, `web/components/{RangeQuestion,LadderQuestion,InterviewProgress}.tsx` (409 → refetch and retry).
   - Proof: `npm run build` plus manual flow.
-- [ ] **M7.4 Screen 3: results and the share page**
+- [x] **M7.4 Screen 3: results and the share page**
   - Files: `web/app/s/[id]/results/page.tsx`, `web/app/r/[shareId]/page.tsx`, `web/components/{ProgressStream,PBestBars,NetCostHistogram,Percentiles,Breakdown,ProsCons,TippingPoints,Warnings,AssumptionsTable,ProseSourceBadge}.tsx` (SSE via `EventSource`; histogram drawn as inline SVG).
   - Proof: `npm run build` plus manual flow, including cancel.
-- [ ] **M7.5 (optional) k6 load test**
+- [x] **M7.5 (optional) k6 load test** *(scripts written; not run here because k6 isn't installed, D-M7-9)*
   - Files: `scripts/k6/quick-sim.js` (`next-question`), `scripts/k6/full-sim.js`.
   - Proof: `k6 run scripts/k6/quick-sim.js` (the p95 goes in the README).
-- [ ] **M7.6 Deploy configs**
+- [ ] **M7.6 Deploy configs** *(configs and `docs/deploy.md` done; **waiting on the developer** to run the deploy with their Railway/Vercel accounts)*
   - Files: Railway config for the `api` and `worker` services (format checked against the current Railway docs; pre-deploy command `tiebreaker migrate up`), `web/vercel.json` if needed, `docs/deploy.md` (step by step, which env vars go where, no secrets in the repo).
   - The developer runs the deploy commands.
   - Proof: `scripts/demo.sh https://<api-host>` passes against the deployed API, and the Vercel URL loads.
-- [ ] **M7.7 README and final docs**
+- [x] **M7.7 README and final docs** *(done: the demo is `scripts/demo` (Go) with a `demo.sh` wrapper, D-M5-11)*
   - Files: `README.md` (§6), `scripts/demo.sh` (curl walkthrough: create session → add 3 sample cars → constraints → usage → interview loop → start run → SSE → report → share link → `verify-run`), `docs/architecture.md` (diagram + package map), and final passes on `DECISIONS.md` and `FLOW.md`.
   - Learning note: **`docs/learning/07-frontend-deploy.md`**. Covers App Router server vs. client components, `EventSource`, CORS, ETag handling in the browser, Docker on Railway, separating env vars per service. Ends with 3 questions.
   - Proof: `bash scripts/demo.sh http://localhost:8080`

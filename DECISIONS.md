@@ -516,3 +516,40 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 
 ### D-M6-9 — P2 uses (free-text usage parsing, brochure import) stay deferred
 - **Why:** D-P-5. `GenerateJSON` with a response schema is implemented and tested, so both features can be built on it in an optional M8 without changing `internal/llm`.
+
+---
+
+## M7 — Frontend and deploy
+
+### D-M7-1 — Frontend versions (newest release at least two weeks old, checked 2026-11-07)
+- **Versions:** `next 16.4.3`, `react`/`react-dom 19.3.1`, `tailwindcss` + `@tailwindcss/postcss 4.3.3`, `typescript 6.0.3`, `vitest 4.1.12`, `vite 8.3.5`, `@types/* 19.3.0 / 26.6.5`. CI uses `actions/setup-node@v7.1.0`.
+- **TypeScript 6.0.3, not 7.0.2:** v7 is the new native compiler. 6.x is the well-trodden pairing with Next 16, and nothing here needs 7.
+
+### D-M7-2 — Scaffolded by hand, no ESLint: `lint` = `tsc --noEmit`
+- **Why:** `create-next-app` would pick its own (newest) versions. Writing the four config files by hand keeps every version pinned and the project tiny. Strict TypeScript type checking catches the mistakes that matter in a UI this thin, without an ESLint config to maintain. *(Plan.md M7.1 said `npm run lint`; it now runs `tsc`.)*
+
+### D-M7-3 — `legacy-peer-deps=true` in `web/.npmrc`
+- **Why:** npm 10.9 crashes (`Cannot read properties of null (reading 'edgesOut')`) while auto-installing vitest 4's optional peer dependencies. Narrowed down by installing without vitest, then with `vite` explicit. Its one required peer (`vite`) is declared explicitly, so turning off automatic peer installs loses nothing. `npm ci` in CI reads the same `.npmrc`.
+
+### D-M7-4 — Client components, a typed fetch wrapper, no data-fetching library
+- **Why:** the UI is "kept thin" (SPEC §3). `web/lib/api.ts` handles the three protocol details the backend relies on: the error shape → `ApiError`, ETag → `If-Match` with reload on 409, and one `Idempotency-Key` per answer, reused on retry. These are unit-tested with vitest.
+
+### D-M7-5 — Safe prose rendering and an SVG histogram
+- **Decision:** a tiny Markdown subset is rendered into React elements (no `dangerouslySetInnerHTML`). The histogram is inline SVG drawn from the stored bins.
+- **Why:** LLM prose is untrusted input, so the renderer must not be able to inject HTML. No chart library means fewer dependencies to pin and update.
+
+### D-M7-6 — CORS with an explicit allow-list and exposed `ETag`
+- **Decision:** `CORS_ALLOWED_ORIGINS` (default `http://localhost:3000`). The middleware echoes allowed origins only, exposes `ETag, Idempotent-Replayed, Retry-After, Location, X-Request-ID`, and answers preflights with 204, allowing `If-Match` and `Idempotency-Key`.
+- **Why:** without `Expose-Headers` the browser hides the ETag, and optimistic locking couldn't work from JavaScript.
+
+### D-M7-7 — One image for every role: `TIEBREAKER_MODE`, `MIGRATE_ON_START`, `$PORT`
+- **Decision:** with no arguments the binary runs the subcommand named in `TIEBREAKER_MODE`. `serve` applies migrations first when `MIGRATE_ON_START=true`. `HTTP_ADDR` defaults to `:$PORT` when the platform sets `PORT`. The Dockerfile has no default `CMD`, and Compose passes subcommands explicitly.
+- **Why:** the distroless runtime has no shell, so a platform start command such as `sh -c "/tiebreaker worker"` would fail. Environment-driven modes work on any runner. Migrating on start is safe with several replicas because golang-migrate takes an advisory lock.
+
+### D-M7-8 — Railway: dashboard steps plus an IaC file; Vercel: dashboard
+- **Decision:** Railway's `railway.toml`/`railway.json` (config as code) is deprecated as of 2026-12-01, and its replacement is `.railway/railway.ts` (Infrastructure as Code). `.railway/railway.ts` follows the documented options (`service`, `postgres`, `redis`, `github`, `env`, `healthcheck`, `preserve()`). `docs/deploy.md` gives equivalent dashboard steps, which work regardless of format.
+- **Caveat:** the IaC file could not be executed here (no Railway account), so the docs say to run `railway config plan` first.
+- **Secrets** (`JWT_SECRET`, `GEMINI_API_KEY`) are `preserve()` values set in the dashboard, never committed.
+
+### D-M7-9 — k6 scripts are provided but not run here
+- **Why:** k6 isn't installed on the development machine, and load testing is optional (SPEC §15). The engine's latency is covered by Go benchmarks (`docs/benchmarks.md`). The scripts are in `scripts/k6/` with usage notes.

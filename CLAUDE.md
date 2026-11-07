@@ -35,9 +35,13 @@ go run ./scripts/seed --check                    # validate data/seed without a 
 MSYS_NO_PATHCONV=1 docker compose exec -T api /tiebreaker admin-token   # Git Bash rewrites /paths without MSYS_NO_PATHCONV
 curl localhost:8080/healthz ; curl localhost:8080/readyz
 go run ./cmd/tiebreaker serve                    # needs DATABASE_URL, REDIS_URL, JWT_SECRET in the env
+bash scripts/demo.sh [api-url]                    # end-to-end flow over HTTP (Go program in scripts/demo)
+go run ./cmd/tiebreaker verify-run -run-id <id>  # re-run a stored simulation and compare its results hash
+go test ./internal/report -run Golden -update    # rewrite report template golden files after a deliberate change
+cd web && npm ci && npm run lint && npm test && npm run build   # frontend (lint = tsc --noEmit)
 ```
 
-CI (`.github/workflows/ci.yml`) runs four jobs: lint, unit (also fails if `go mod tidy` changes `go.mod`/`go.sum`), race, and integration. Run `go mod tidy` before committing dependency changes.
+CI (`.github/workflows/ci.yml`) runs five jobs: lint, unit (also fails if `go mod tidy` changes `go.mod`/`go.sum`), race, integration, and web. Run `go mod tidy` before committing dependency changes.
 
 ## Architecture (big picture)
 
@@ -47,7 +51,7 @@ CI (`.github/workflows/ci.yml`) runs four jobs: lint, unit (also fails if `go mo
 - **The HTTP package is `package httpapi`** in directory `internal/http`, to avoid clashing with `net/http`. `NewRouter(Deps)` takes every dependency explicitly. The middleware order is requestID → accessLog (logs the route template, never raw paths with IDs) → recovery → bodyLimit.
 - **Store.** `store.OpenPostgres` (GORM with the slog logger, `TranslateError`, parameterised query logging) and `store.OpenRedis`. **All transactions go through `store.WithTx(ctx, db, fn)`**, and `fn` must use the `tx` it is given.
 - **Package boundaries enforced by lint.** `depguard` blocks `internal/sim` and `internal/decision` from importing `internal/{http,store,llm,jobs}`, GORM, Redis, Gin, or `math/rand` (use `math/rand/v2`). They are pure functions: plain structs in, plain structs out.
-- **Planned flow (M2–M6, see Plan.md §1).**
+- **Request and job flow.** See FLOW.md for the full call paths.
   - The API runs quick sims in-process for the adaptive interview.
   - Full runs go into `sim_runs`, which workers claim with `FOR UPDATE SKIP LOCKED`, using a lease and `worker_id` fencing.
   - Progress is published on Redis `run:{id}` and read through SSE.

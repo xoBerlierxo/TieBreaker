@@ -2,7 +2,7 @@
 
 This file follows the path a program run or a request takes through the files and functions. Each milestone adds its flows. Function names are written `package.Function`, with the file in brackets.
 
-Status: **M6 (Gemini)**. The full backend, including optional LLM prose with the fact validator.
+Status: **M7 (complete)**. Backend, frontend, and deployment entry points.
 
 ---
 
@@ -373,7 +373,35 @@ report.Analyzer.draft [internal/report/analyze.go]
  → Draft{ProseMD, ProseSource: "llm" | "template"}
 ```
 
-## 21. Tests and where they plug in
+## 21. The frontend (`web/`, Next.js App Router, client components)
+
+```
+/                          app/page.tsx                 POST /v1/sessions {user_state} → router.push(/s/:id)
+/s/:id                     app/s/[id]/page.tsx          GET session (ETag → version)
+  search box               AddCar → GET /v1/variants?q=  (UnverifiedBadge on unverified data)
+  add / remove car         mutate(POST|DELETE, If-Match: version) → 409 version conflict → reload + message
+  constraints              PUT /constraints (If-Match) → USAGE → /s/:id/interview | DONE (none_fit) → /s/:id/results
+/s/:id/interview           app/s/[id]/interview/page.tsx
+  loop: GET /next-question → QuestionCard (range | number | financing | choice | yes_no)
+        → submitIdempotent(POST /answers, one Idempotency-Key, If-Match) [lib/api.ts] → ETag → next
+  done → POST /simulations (If-Match) → /s/:id/results?run=<id>
+/s/:id/results             app/s/[id]/results/page.tsx
+  EventSource(/v1/simulations/:run/events) → progress bar → "done" → GET /sessions/:id/report
+  (reload without ?run → poll the report every 2 s while it returns 409)
+  → <Report> [components/Report.tsx]: P(best) bars, SVG histogram (results[].histogram), summary
+    (Markdown → React elements), cost table, tipping points, eliminations, seed, share link
+/r/:shareId                app/r/[shareId]/page.tsx     GET /r/:shareId → <Report>
+```
+
+## 22. Deployment entry points
+
+```
+container start, no args → main.run: TIEBREAKER_MODE=serve|worker → the subcommand   [cmd/tiebreaker/main.go]
+serve: MIGRATE_ON_START=true → store.MigrateUp (advisory lock) → listen on HTTP_ADDR or :$PORT
+CORS: cors(CORS_ALLOWED_ORIGINS) runs first in the middleware chain                   [internal/http/cors.go]
+```
+
+## 23. Tests and where they plug in
 
 | Flow | How it is tested without real infrastructure |
 |---|---|
@@ -393,3 +421,4 @@ report.Analyzer.draft [internal/report/analyze.go]
 | Gemini adapter | `internal/llm/gemini_test.go`: the real adapter against an `httptest` server (`BaseURL`) |
 | LLM cache and budget (integration) | `internal/llm/wrappers_integration_test.go`: real Redis, `llm.Fake` inside |
 | fact validator and LLM writer | `validate_test.go` (table), `llm_test.go` with `llm.Fake` |
+| frontend API client | `web/lib/api.test.ts` (vitest, fake `fetch`) |
