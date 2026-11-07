@@ -511,14 +511,14 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
 
 **Acceptance (SPEC §20):** winner / deadlock / none_fit; tipping points; template report; share links.
 
-- [ ] **M5.1 Classification**
+- [x] **M5.1 Classification**
   - Files: `internal/decision/classify.go`.
   - Tests:
     - `TestClassify_Table` (winner by P(best) ≥ 0.55; winner by gap ≥ 0.15; deadlock otherwise; thresholds from config).
     - `TestSanity_IdenticalCarsDeadlock` (whole pipeline through `sim.Run`).
     - `TestSanity_DominantCarIsWinnerWithPBestNear1`.
   - Proof: `go test -race ./internal/decision/...`
-- [ ] **M5.2 Tipping points**
+- [x] **M5.2 Tipping points**
   - Files: `internal/decision/tipping.go` (sweeps: km/month over [max(100, lo/2), min(20,000, 2·hi)]; ownership years over integers in [max(1, T−4), min(15, T+4)]; fuel-price trend μ over the range in the `price_trend.sweep` assumption; home charging yes/no only when an EV is present; each answered preference over [0, cap]. 9 grid points, quick sims on a shared seed, bisection to tolerance (integers for years). Each result is marked as inside or outside the user's stated range).
   - Tests:
     - `TestTipping_FindsKmCrossoverWithinTolerance` (σ = 0 fixture where the crossover can be solved by hand).
@@ -528,7 +528,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestTipping_MarksInsideUserRange`.
     - `TestTipping_HonoursContextCancel`.
   - Proof: `go test -race ./internal/decision/...`
-- [ ] **M5.3 Migration 0010 and `BuildFacts`**
+- [x] **M5.3 Migration 0010 and `BuildFacts`**
   - Files: `migrations/0010_create_reports.*`, `internal/report/facts.go`, `internal/report/proscons.go` (₹ advantage per attribute = (car's share − mean share of the other cars) × bracket midpoint; plus the median-cost difference per category; ranked by |₹|; top 3 each), `internal/report/warnings.go`.
   - Tests:
     - `TestBuildFacts_ProsConsRankedByUserRupees`.
@@ -538,14 +538,14 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestBuildFacts_UnaskedDifferencesListed`.
     - `TestBuildFacts_OnlySurvivorReport`.
   - Proof: `go test -race ./internal/report/...`
-- [ ] **M5.4 Template renderer**
+- [x] **M5.4 Template renderer** *(done: rupee formatting lives in `internal/money`, see D-M3-11)*
   - Files: `internal/report/template.go`, `internal/report/templates/{winner,deadlock,none_fit}.md.tmpl` (embedded), `internal/report/format.go` (₹ with Indian grouping, lakh wording, percentages).
   - Tests:
     - `TestFormatINR_IndianGrouping` (table: 999 → ₹999; 102340 → ₹1,02,340; 12345678 → ₹1,23,45,678; negatives).
     - `TestFormatLakh`.
     - `TestRenderTemplate_GoldenFiles` (winner, deadlock-tipping, deadlock-close, none_fit; `-update` flag).
   - Proof: `go test -race ./internal/report/...`
-- [ ] **M5.5 Reports in the job, report endpoints and share links**
+- [x] **M5.5 Reports in the job, report endpoints and share links** *(done: facts and prose are drafted in the worker's analysis step, see D-M5-4)*
   - Files: `internal/jobs/runner.go` (add classify → tipping points (progress 80–95 %) → facts → template → store `reports` + `share_id` + `histogram_json` atomically), `internal/session/constraints.go` (write the none_fit report), `internal/http/reports.go` (`GET /v1/sessions/:id/report`, `GET /r/:shareId`, read-only).
   - Tests (integration):
     - `TestReport_WinnerAfterRun`.
@@ -554,11 +554,11 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
     - `TestShareLink_Unknown404`.
     - `TestReport_BeforeRunDone409`.
   - Proof: `go test -race -tags=integration -run Report\|Share ./...`
-- [ ] **M5.6 Reproducibility check**
+- [x] **M5.6 Reproducibility check** *(done: `internal/jobs/verify.go`)*
   - Files: `internal/jobs/verify.go`, the `verify-run` subcommand, `sim_runs.results_hash`.
   - Tests (integration): `TestRerunWithStoredSeed_ReproducesExactly` (hash matches), `TestVerifyRun_DetectsTamperedInputs`.
   - Proof: `go run ./cmd/tiebreaker verify-run --run-id <id>`
-- [ ] **M5.7 Phase docs**
+- [x] **M5.7 Phase docs**
   - Update `DECISIONS.md` (tie splitting, sweep ranges, pros/cons formula, facts-first) and `FLOW.md` (job → decision → report).
   - Learning note: **`docs/learning/05-decision-tipping-points-reports.md`**. Covers bisection, `text/template` + `embed`, golden-file tests, separating facts from presentation. Ends with 3 questions.
 

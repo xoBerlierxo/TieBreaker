@@ -2,7 +2,7 @@
 
 This file follows the path a program run or a request takes through the files and functions. Each milestone adds its flows. Function names are written `package.Function`, with the file in brackets.
 
-Status: **M4 (jobs + progress)**. Everything up to the interview, plus starting simulations, the worker, progress over SSE, and cancel.
+Status: **M5 (decision + reports)**. The full backend: catalogue, sessions, interview, simulations, the worker, SSE, decisions, tipping points, reports, share links and reproduction.
 
 ---
 
@@ -305,7 +305,49 @@ POST /v1/simulations/:id/cancel → Service.CancelRun: WithTx + LockRun (FOR UPD
       queued → cancelled + FinishRun(session → INTERVIEW) | running → cancel_requested = true | finished → 409
 ```
 
-## 17. Tests and where they plug in
+## 17. From finished simulation to report (inside the worker)
+
+```
+SimRunner.Run [internal/jobs/runner.go]  (after sim.Run + Summarize, progress 0–80 %)
+ └─ Analyze = report.Analyzer.Analyze [internal/report/analyze.go]   (outside any transaction)
+     ├─ decode RunContext from payload.context
+     ├─ decision.Classify(P(best), thresholds) [internal/decision/classify.go]   → winner | deadlock (+ reason)
+     ├─ decision.BuildSweeps(inputs, fuel-trend range, ladder cap) [tipping.go]
+     ├─ decision.FindTippingPoints (errgroup over sweeps; progress 80–99 %)
+     │     per sweep: 9 grid points (quick sims on the run's seed) → leader changes → bisection → crossover
+     ├─ report.BuildFacts [facts.go]
+     │     per car: P(best), P(cheapest), percentiles, breakdown, safety ("not rated" if none),
+     │     pros/cons in ₹ (preferences × bracket midpoint; cost-category medians), not-asked list,
+     │     tipping sentences involving the car, warnings
+     └─ draft: RenderTemplate(facts) [template.go + templates/*.md.tmpl]  (M6: LLM writer + validator first)
+→ Outcome.Extra = RunOutput{…, Analysis: report.Draft}
+worker.complete → WithTx: Complete (fenced) + INSERT sim_results
+                          + session.Finalizer.Done → report.OnRunDone (INSERT reports, new share_id) [store.go]
+                          + FinishRun(session → DONE)
+```
+
+## 18. none_fit (no simulation)
+
+```
+Service.SetConstraints → every car eliminated → setState(DONE)
+ └─ NoneFitHook = report.OnNoneFit (same transaction)
+     BuildNoneFit(eliminated cars with their shortfall messages) → RenderTemplate(none_fit) → INSERT reports (run_id NULL)
+```
+
+## 19. Reading reports, share links, reproduction
+
+```
+GET /v1/sessions/:id/report → reportHandler.forSession [internal/http/reports.go] → report.Service.ForSession
+      latest report | none + SIMULATING → 409 | none → 404;  View = facts + prose + results (histograms), no session ID
+GET /r/:shareId             → report.Service.ByShareID (public, read-only, Cache-Control: public)
+
+tiebreaker verify-run -run-id X [cmd/tiebreaker/verifyrun.go]
+ └─ jobs.VerifyRun [internal/jobs/verify.go]: decode inputs_json → sim.Run(stored seed) → decision.Fingerprint == results_hash?
+
+go run ./scripts/demo [scripts/demo/main.go]: the whole flow over HTTP, including SSE, printing the report
+```
+
+## 20. Tests and where they plug in
 
 | Flow | How it is tested without real infrastructure |
 |---|---|
@@ -320,3 +362,5 @@ POST /v1/simulations/:id/cancel → Service.CancelRun: WithTx + LockRun (FOR UPD
 | sessions over HTTP (integration) | `internal/http/integration_test.go`: real router + services + Postgres + Redis + seed data |
 | job queue and worker (integration) | `internal/jobs/jobs_integration_test.go`: fake runners (counting, blocking), recording finalizer, goleak |
 | simulations over HTTP (integration) | `internal/http/simulations_integration_test.go`: a real worker in a goroutine, SSE over `httptest.NewServer` |
+| reports | `facts_test.go` with a hand-built fixture; golden files in `internal/report/testdata` (`-update` to rewrite) |
+| reports over HTTP (integration) | `internal/http/reports_integration_test.go`: worker with the real Analyzer; share links; `VerifyRun` |

@@ -413,3 +413,59 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 
 ### D-M4-12 — Results store a 30-bin histogram with shared edges
 - **Why:** the results page (M7) draws all cars on one axis. Bins span the 1st–99th percentile of all cars together, so a few extreme futures don't squash the chart. Values outside go into the end bins.
+
+---
+
+## M5 — Decision and reports
+
+### D-M5-1 — Classification exactly as SPEC §9.1
+- **Decision:** winner if the leader's P(best) ≥ 0.55 **or** its lead over the runner-up ≥ 0.15; otherwise deadlock. A single car is always the winner (reason `only_car`). The reason (`p_best_threshold`, `gap_threshold`, `only_car`, `too_close`) is stored in the facts, so the report can say *why* it is a clear winner.
+
+### D-M5-2 — Tipping points: 9-point grid, bisection, common random numbers
+- **Decision:** each input is swept over 9 evenly spaced points with quick simulations (all on the run's master seed). Wherever the leader changes between neighbouring points, the search bisects (8 iterations, or down to whole numbers for integer inputs) and reports the crossover.
+- **Sweep ranges:**
+  - km/month: [max(100, lo/2), min(20,000, 2·hi)]
+  - years: [max(1, T−4), min(15, T+4)], integers
+  - fuel-price trend μ: the assumption `price_trend.sweep`
+  - home charging: yes/no, only when an EV is shortlisted
+  - each priced preference: [0, ladder cap]
+- **"Inside your range":** each crossover records whether it falls inside the user's own answer (or within one grid step of a single-valued answer), so the report can say when it is worth pinning down.
+- **Why:** these are SPEC §9.2's rules. With common random numbers, the leader at each point differs only because of the input, not noise. `TestTipping_FindsKmCrossoverWithinTolerance` checks the bisection against a hand-solved break-even (888.9 km/month).
+- **Note:** sweeps never modify the caller's inputs. `Apply` clones the preference slice (`TestTipping_PrefSweepDoesNotModifyBase`).
+
+### D-M5-3 — Tipping points are computed for every report, in the worker
+- **Why:** deadlock reports are built around them, and SPEC §9.3 lists "tipping points that involve this car" for **all** reports. With about 8 sweeps and roughly 17 quick sims each, they take a few hundred ms in parallel, so it's cheap enough. They run in the worker's analysis step (progress 80–99 %), never in a request.
+
+### D-M5-4 — Facts are built outside the database transaction; only the insert is inside
+- **Decision:** `report.Analyzer` (a `jobs.AnalyzeFunc`) runs classification, tipping points, `BuildFacts` and prose rendering after the simulation, outside any transaction. The completion transaction only inserts the finished draft (`report.OnRunDone`, through the session finalizer).
+- **Why:** a database transaction must never stay open across slow work (tipping points now, a 20 s LLM call in M6). The report still commits atomically with "run done" and "session DONE".
+
+### D-M5-5 — Pros and cons ranked by this buyer's rupees
+- **Decision:** two sources, one scale (₹):
+  - **Preferences:** (car's share − mean share of the other cars) × the midpoint of the buyer's ₹ bracket for that difference.
+  - **Costs:** for each cost category, the mean of the other cars' medians minus this car's median.
+  - Points worth under ₹500 are dropped, and the top 3 of each sign are kept.
+- **Why:** SPEC §9.3 says "ranked by the ₹ value this user gave each difference (not by generic importance)". Attributes that differ but weren't asked about are listed as "not asked" and never ranked, because the user gave them no value (D-P-7).
+
+### D-M5-6 — The facts are the single source of truth; templates only format
+- **Decision:** `Facts` holds every number and short phrase the report uses (including tipping-point sentences with their rounded crossover text). Templates (`text/template`, embedded) may only format values already present: `inr`, `lakh`, `pct`, `km`, `num`.
+- **Why:** SPEC §9.4. It also gives M6's fact validator a complete list of allowed numbers and names.
+
+### D-M5-7 — `none_fit` reports are written in the constraints transaction
+- **Decision:** `session.Service` calls a `NoneFitHook` (implemented by `report.OnNoneFit`, wired in `serve`) when every car is eliminated. The report row commits with the SHORTLISTING → DONE transition. `reports.run_id` is NULL exactly for none_fit (CHECK constraint).
+- **Why:** there is no report-less DONE session. The hook keeps `session` from importing `report`; it's the other way round.
+
+### D-M5-8 — The share view never contains the session ID
+- **Decision:** `report.View` has no session ID and is served identically on `/v1/sessions/:id/report` and the public `/r/:shareId` (`Cache-Control: public, max-age=300`). The share ID is 128 random bits.
+- **Why:** a session ID works like a password: anyone holding it can change the session. A share link must be read-only and must not leak it (`TestShareLink_PublicReadOnlyNoSessionID`).
+
+### D-M5-9 — Reproducibility check: `tiebreaker verify-run`
+- **Decision:** `jobs.VerifyRun` re-runs a stored run from `inputs_json` and `master_seed` and compares `decision.Fingerprint` (SHA-256 of every sample) with `sim_runs.results_hash`. It reports the CPU architecture, since bit-exactness is per architecture (D-M2-11).
+- **Verified:** on the real Docker stack (match on amd64), and by `TestRerunWithStoredSeed_ReproducesExactly`. `TestVerifyRun_DetectsTamperedInputs` shows that a changed input is detected.
+
+### D-M5-10 — Golden-file tests for the templates
+- **Decision:** `TestRenderTemplate_GoldenFiles` renders four fixtures (winner, deadlock with tipping point, genuinely close, none_fit) and compares them with `testdata/*.golden`. After a deliberate change, run `go test ./internal/report -run Golden -update` and review the diff.
+- **Why:** prose regressions (wrong units, a duplicated warning) are easy to miss in code review and obvious in a diff. Two such bugs, "₹800 km" and a duplicated placeholder warning, were caught this way while writing the templates.
+
+### D-M5-11 — The demo client is a Go program (`scripts/demo`), with `demo.sh` as a wrapper
+- **Why:** Plan.md M7.7 imagined a bash + curl + jq script, but jq isn't on the development machine (Windows), and a Go program runs identically everywhere Go does. It drives the whole flow, including SSE, and was used to check M5 end to end on the Docker stack. *(Deviation from Plan.md, moved forward from M7.)*
