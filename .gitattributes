@@ -1,0 +1,5 @@
+# Keep LF line endings in the repo so Linux containers and CI see the same bytes as Windows dev machines.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary

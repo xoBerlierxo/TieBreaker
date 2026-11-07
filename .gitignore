@@ -1,0 +1,25 @@
+# Binaries and build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+*.prof
+
+# Env files (never commit secrets; .env.example is the template)
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Frontend
+/web/node_modules/
+/web/.next/
+/web/out/
+/web/.vercel/

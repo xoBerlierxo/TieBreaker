@@ -1,0 +1,76 @@
+# golangci-lint v2 configuration (pinned tool version: v2.15.0, see DECISIONS.md).
+version: "2"
+
+run:
+  timeout: 5m
+  # Lint the integration tests too, so they don't rot.
+  build-tags:
+    - integration
+
+linters:
+  # "standard" = errcheck, govet, ineffassign, staticcheck, unused.
+  default: standard
+  enable:
+    - bodyclose     # HTTP response bodies must be closed
+    - depguard      # enforces the package boundaries from SPEC §4
+    - errorlint     # use errors.Is / errors.As with wrapped errors
+    - gosec         # common security mistakes
+    - misspell
+    - noctx         # outgoing HTTP requests must carry a context
+    - revive        # idiomatic-Go style checks
+    - unconvert
+
+  settings:
+    depguard:
+      rules:
+        # SPEC §4: internal/sim and internal/decision are pure. They take plain
+        # structs in and return plain structs out, with no I/O dependencies.
+        pure-engine:
+          list-mode: lax
+          files:
+            - "**/internal/sim/**"
+            - "**/internal/decision/**"
+          deny:
+            - pkg: github.com/xoBerlierxo/TieBreaker/internal/http
+              desc: "sim/decision must not depend on the HTTP layer (SPEC §4)"
+            - pkg: github.com/xoBerlierxo/TieBreaker/internal/store
+              desc: "sim/decision must not depend on the database layer (SPEC §4)"
+            - pkg: github.com/xoBerlierxo/TieBreaker/internal/llm
+              desc: "sim/decision must not depend on the LLM (SPEC §1: the engine decides)"
+            - pkg: github.com/xoBerlierxo/TieBreaker/internal/jobs
+              desc: "sim/decision must not depend on the job queue (SPEC §4)"
+            - pkg: gorm.io
+              desc: "no database access in the pure engine"
+            - pkg: github.com/redis
+              desc: "no Redis access in the pure engine"
+            - pkg: github.com/gin-gonic
+              desc: "no HTTP framework in the pure engine"
+            - pkg: math/rand$
+              desc: "use math/rand/v2 with explicit PCG streams (SPEC §10.1)"
+
+    revive:
+      rules:
+        - name: exported
+          disabled: true   # doc comments are encouraged, not enforced on every symbol
+        - name: package-comments
+          disabled: true
+
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      # The Monte Carlo engine deliberately uses a seeded, non-cryptographic PRNG.
+      - path: internal/(sim|decision|interview)/
+        linters: [gosec]
+        text: "G404"
+      - path: _test\.go
+        linters: [gosec, noctx]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/xoBerlierxo/TieBreaker
