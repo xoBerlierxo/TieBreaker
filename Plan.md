@@ -206,7 +206,7 @@ Each task should take about 2–4 hours. Every task lists the files it creates o
   - Files: `Dockerfile` (multi-stage, `golang:1.26` builder, distroless static non-root runtime, `CGO_ENABLED=0`), `docker-compose.yml` (postgres:16 and redis:7 with healthchecks, then `migrate` (one-shot), `api`, `worker` using `depends_on: condition: service_healthy`), `.env.example` (every §17 key plus the extras in §7 D10, `LLM_ENABLED=false`, `GEMINI_MODEL=gemini-3.5-flash-lite`, and a comment warning not to set `GOOGLE_API_KEY`), `.dockerignore`.
   - Tests: none.
   - Proof: `docker compose up -d --build && curl -fsS localhost:8080/healthz && curl -fsS localhost:8080/readyz && docker compose ps`. Then `docker compose stop redis` and check that `curl -i localhost:8080/readyz` returns 503.
-- [ ] **M0.6 Integration-test harness and CI**
+- [x] **M0.6 Integration-test harness and CI** *(CI green: run 42390778783, 2026-11-07)*
   - Files: `internal/testutil/containers.go` (start Postgres 16 and Redis 7 through testcontainers; one container per package, reused via `TestMain`), `internal/store/store_integration_test.go`, `.github/workflows/ci.yml` (jobs: `lint` (golangci-lint-action), `unit` (`go test ./...`), `race` (`go test -race ./...`), `integration` (`go test -race -tags=integration ./...` on ubuntu-latest), and later `web`).
   - Tests: `TestOpen_PingsRealPostgres`, `TestWithTx_RollsBackOnError`, `TestWithTx_CommitsOnNil`, `TestRedis_PingsRealRedis`.
   - Proof: `go test -race -tags=integration ./internal/store/...`, then push and `gh run watch`.
