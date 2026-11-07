@@ -1,0 +1,7 @@
+# None of your cars meet your hard constraints
+
+Every shortlisted car failed at least one of your requirements, so nothing was simulated. Here is what each car missed, and by how much:
+{{range .Eliminated}}
+- **{{.Label}}**: {{join .Reasons "; "}}
+{{end}}
+Relax a constraint (for example, raise the budget by the smallest shortfall above) or add a different car, then try again.

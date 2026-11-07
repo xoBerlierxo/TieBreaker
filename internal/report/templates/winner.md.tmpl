@@ -1,0 +1,11 @@
+# {{.Winner}} is the best choice for you
+
+In **{{pct .Decision.LeaderPBest}}** of the simulated futures, {{.Winner}} had the lowest net cost for you: what owning it costs over {{.HorizonYears}} years, minus the value you put on its advantages. That clears the bar for a clear winner ({{if eq .Decision.Reason "p_best_threshold"}}at least {{pct .Thresholds.WinPBest}} of futures{{else if eq .Decision.Reason "gap_threshold"}}a lead of at least {{pct .Thresholds.WinGap}} over the runner-up{{else}}it is the only car that meets your constraints{{end}}).
+
+## The cars
+{{range .Cars}}{{template "car" .}}{{end}}
+{{if .Tipping}}
+## What could change the answer
+{{range .Tipping}}- {{.Sentence}}{{if .InsideUserRange}} *(this is within the range you gave)*{{end}}
+{{end}}{{end}}
+{{template "footer" .}}

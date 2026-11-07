@@ -1,0 +1,34 @@
+{{define "car"}}
+### {{.Label}}{{if not .Verified}} ⚠️ unverified data{{end}}
+
+- **P(best):** {{pct .PBest}} · **P(cheapest):** {{pct .PCheapest}}
+- **Net cost** (after your preferences), 10th / 50th / 90th percentile: {{inr .NetCost.P10}} / {{inr .NetCost.P50}} / {{inr .NetCost.P90}}
+- **Ownership cost**, 10th / 50th / 90th percentile: {{inr .OwnershipCost.P10}} / {{inr .OwnershipCost.P50}} / {{inr .OwnershipCost.P90}}
+- **Safety rating:** {{.SafetyRating}}
+- **Median cost breakdown:** {{range $i, $c := .Breakdown}}{{if $i}} · {{end}}{{$c.Category}} {{inr $c.Median}}{{end}}
+{{if .Pros}}
+**Pros** (ranked by what they are worth to you):
+{{range .Pros}}- {{.Text}}
+{{end}}{{end}}{{if .Cons}}
+**Cons:**
+{{range .Cons}}- {{.Text}}
+{{end}}{{end}}{{if .Tipping}}
+**Tipping points involving this car:**
+{{range .Tipping}}- {{.}}
+{{end}}{{end}}{{if .Warnings}}
+**Data warnings:**
+{{range .Warnings}}- {{.}}
+{{end}}{{end}}{{end}}
+
+{{define "footer"}}
+## How this was worked out
+
+{{if .Usage}}You said you drive {{km (index .Usage.KmPerMonth 0)}}–{{km (index .Usage.KmPerMonth 1)}} km a month and plan to keep the car for {{.HorizonYears}} years, paying with {{.Usage.Financing}}. {{end}}Every number comes from {{num .Run.Futures}} simulated futures of ownership (model {{.Run.ModelVersion}}, seed {{.Run.Seed}}), so re-running with the same seed reproduces this report exactly.
+{{if .Eliminated}}
+**Cars removed by your hard constraints:**
+{{range .Eliminated}}- {{.Label}}: {{join .Reasons "; "}}
+{{end}}{{end}}{{if or .Warnings .Placeholders}}
+**Data warnings:**
+{{range .Warnings}}- {{.}}
+{{end}}{{if .Placeholders}}- {{.Placeholders}} model assumptions (prices, tariffs, depreciation…) are placeholder values, not sourced data.
+{{end}}{{end}}{{end}}

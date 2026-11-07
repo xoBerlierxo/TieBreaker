@@ -1,0 +1,58 @@
+# Test Car B is the best choice for you
+
+In **70%** of the simulated futures, Test Car B had the lowest net cost for you: what owning it costs over 5 years, minus the value you put on its advantages. That clears the bar for a clear winner (at least 55% of futures).
+
+## The cars
+
+### Test Car A ⚠️ unverified data
+
+- **P(best):** 30% · **P(cheapest):** 85%
+- **Net cost** (after your preferences), 10th / 50th / 90th percentile: ₹6,00,000 / ₹6,50,000 / ₹7,20,000
+- **Ownership cost**, 10th / 50th / 90th percentile: ₹6,00,000 / ₹6,50,000 / ₹7,20,000
+- **Safety rating:** 3★ (Test NCAP)
+- **Median cost breakdown:** upfront ₹7,00,000 · financing ₹0 · energy ₹2,50,000 · insurance ₹80,000 · service ₹30,000 · repairs ₹10,000 · tyres ₹12,000 · resale −₹4,00,000
+
+**Pros** (ranked by what they are worth to you):
+- Better resale value: about ₹1 lakh more back after 5 years (median, today's money)
+
+**Cons:**
+- Higher fuel/energy cost: about ₹1.9 lakh more over 5 years (median, today's money)
+- Safety rating: 3★ vs 5★; worth about ₹1.5 lakh to you
+- Automatic gearbox: a manual gearbox vs an automatic gearbox; worth about ₹37,500 to you
+
+**Tipping points involving this car:**
+- Above ~1,500 km/month, Test Car A wins; below it, Test Car B wins.
+
+**Data warnings:**
+- Test Car A: catalogue data is not verified
+
+### Test Car B ⚠️ unverified data
+
+- **P(best):** 70% · **P(cheapest):** 15%
+- **Net cost** (after your preferences), 10th / 50th / 90th percentile: ₹5,20,000 / ₹5,90,000 / ₹6,60,000
+- **Ownership cost**, 10th / 50th / 90th percentile: ₹6,80,000 / ₹7,60,000 / ₹8,30,000
+- **Safety rating:** 5★ (Test NCAP)
+- **Median cost breakdown:** upfront ₹7,00,000 · financing ₹0 · energy ₹60,000 · insurance ₹80,000 · service ₹30,000 · repairs ₹10,000 · tyres ₹12,000 · resale −₹3,00,000
+
+**Pros** (ranked by what they are worth to you):
+- Lower fuel/energy cost: about ₹1.9 lakh less over 5 years (median, today's money)
+- Safety rating: 5★ vs 3★; worth about ₹1.5 lakh to you
+- Automatic gearbox: an automatic gearbox vs a manual gearbox; worth about ₹37,500 to you
+
+**Cons:**
+- Weaker resale value: about ₹1 lakh less back after 5 years (median, today's money)
+
+**Tipping points involving this car:**
+- Above ~1,500 km/month, Test Car A wins; below it, Test Car B wins.
+
+
+## What could change the answer
+- Above ~1,500 km/month, Test Car A wins; below it, Test Car B wins.
+
+
+## How this was worked out
+
+You said you drive 800–1,200 km a month and plan to keep the car for 5 years, paying with cash. Every number comes from 50,000 simulated futures of ownership (model sim-v1, seed 42), so re-running with the same seed reproduces this report exactly.
+
+**Data warnings:**
+- 59 model assumptions (prices, tariffs, depreciation…) are placeholder values, not sourced data.

@@ -1,0 +1,16 @@
+# No clear winner: it's close
+
+No car came out on top often enough to call it. The leader won in only **{{pct .Decision.LeaderPBest}}** of the simulated futures, a lead of {{pct .Decision.Gap}} over the runner-up.
+{{if eq .DeadlockType "tipping_point"}}
+## What would decide it
+
+A single factor would tip the decision:
+{{range .Tipping}}- {{.Sentence}}{{if .InsideUserRange}} *(this is within the range you gave, so it is worth pinning down)*{{end}}
+{{end}}{{else}}
+## Genuinely close
+
+No single factor changes which car leads. Over {{.HorizonYears}} years these cars cost you about the same once your preferences are counted, so you can choose on anything the numbers don't capture: test drives, dealer, looks. That is a useful answer, not a failure.
+{{end}}
+## The cars
+{{range .Cars}}{{template "car" .}}{{end}}
+{{template "footer" .}}
