@@ -197,3 +197,16 @@ func decodeFileStrict(path string, dst any) error {
 	}
 	return nil
 }
+
+// AssumptionRows flattens parsed assumption files into table rows, so callers
+// (tests, tools) can build an AssumptionSet without a database.
+func AssumptionRows(files []AssumptionFile) []Assumption {
+	var rows []Assumption
+	for _, f := range files {
+		for _, a := range f.Assumptions {
+			rows = append(rows, Assumption{Key: a.Key, ValueJSON: a.Value, SourceURL: a.SourceURL,
+				CheckedAt: a.CheckedAt, ModelVersion: f.ModelVersion, Verified: a.Verified})
+		}
+	}
+	return rows
+}
