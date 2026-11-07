@@ -18,7 +18,8 @@ type Deps struct {
 	MaxBodyBytes int64
 	JWTSecret    string
 
-	Catalog CatalogService // nil: catalogue routes are not mounted
+	Catalog  CatalogService // nil: catalogue routes are not mounted
+	Sessions SessionService // nil: session routes are not mounted
 }
 
 // NewRouter builds the Gin engine with the standard middleware and all routes.
@@ -57,6 +58,17 @@ func NewRouter(d Deps) *gin.Engine {
 		admin.POST("/variants", vh.create)
 		admin.PUT("/variants/:id", vh.update)
 		admin.DELETE("/variants/:id", vh.remove)
+	}
+
+	if d.Sessions != nil {
+		sh := sessionHandler{logger: d.Logger, sessions: d.Sessions}
+		v1.POST("/sessions", sh.create)
+		v1.GET("/sessions/:id", sh.get)
+		v1.POST("/sessions/:id/cars", sh.addCar)
+		v1.DELETE("/sessions/:id/cars/:itemId", sh.removeCar)
+		v1.PUT("/sessions/:id/constraints", sh.setConstraints)
+		v1.GET("/sessions/:id/next-question", sh.nextQuestion)
+		v1.POST("/sessions/:id/answers", sh.submitAnswer)
 	}
 
 	return r

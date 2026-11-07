@@ -12,6 +12,8 @@ import (
 	"github.com/xoBerlierxo/TieBreaker/internal/catalog"
 	"github.com/xoBerlierxo/TieBreaker/internal/config"
 	httpapi "github.com/xoBerlierxo/TieBreaker/internal/http"
+	"github.com/xoBerlierxo/TieBreaker/internal/interview"
+	"github.com/xoBerlierxo/TieBreaker/internal/session"
 	"github.com/xoBerlierxo/TieBreaker/internal/store"
 )
 
@@ -47,13 +49,18 @@ func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		}
 	}()
 
+	cat := catalog.NewService(db)
+	sessions := session.NewService(db, cat, sessionConfig(cfg),
+		store.QuickSimCache{Client: rdb, TTL: time.Hour, Logger: logger}, logger)
+
 	router := httpapi.NewRouter(httpapi.Deps{
 		Logger:       logger,
 		Postgres:     store.PostgresPinger{DB: db},
 		Redis:        store.RedisPinger{Client: rdb},
 		MaxBodyBytes: cfg.HTTP.MaxBodyBytes,
 		JWTSecret:    cfg.JWTSecret,
-		Catalog:      catalog.NewService(db),
+		Catalog:      cat,
+		Sessions:     sessions,
 	})
 
 	return runHTTPServer(ctx, cfg.HTTPAddr, router, cfg.HTTP.ShutdownGrace, logger, nil)
@@ -115,4 +122,20 @@ func runHTTPServer(ctx context.Context, addr string, h http.Handler, grace time.
 	}
 	logger.Info("http server stopped")
 	return nil
+}
+
+// sessionConfig maps the app config onto the session service's settings.
+func sessionConfig(cfg config.Config) session.Config {
+	return session.Config{
+		Interview: interview.Config{
+			MaxQuestions: cfg.Interview.MaxQuestions,
+			StopPBest:    cfg.Interview.StopPBest,
+			MinInfoGain:  cfg.Interview.MinInfoGain,
+			Ladder:       interview.Ladder{Rungs: cfg.Interview.Ladder, Cap: cfg.Interview.LadderCap},
+		},
+		QuickFutures: cfg.Sim.QuickFutures,
+		ChunkSize:    cfg.Sim.ChunkSize,
+		QuickTimeout: cfg.Sim.QuickTimeout,
+		DiscountRate: cfg.DiscountRate,
+	}
 }

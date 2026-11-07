@@ -7,17 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
-
-	"github.com/gin-gonic/gin"
 )
-
-func TestMain(m *testing.M) {
-	gin.SetMode(gin.TestMode)
-	os.Exit(m.Run())
-}
 
 // fakePinger is a Pinger that returns a fixed error (nil means healthy).
 type fakePinger struct{ err error }
