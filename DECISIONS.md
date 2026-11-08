@@ -557,3 +557,8 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 ### D-M7-10 — Tests use a frozen fictional fixture (`testdata/seed/`), not `data/seed/`
 - **Decision:** the original sample data was copied to `testdata/seed/`, and every test that needs catalogue data loads that copy. Only two guard tests read the real `data/seed/`: every assumption key exists for every state, and no car is marked verified without real sources. The demo client takes `-q <search>` so it works with real cars.
 - **Why:** the developer is replacing the sample cars and placeholder assumptions with real, sourced data. The tests previously searched for "alpha"/"beta"/"gamma" and required some assumptions to stay placeholders, so real data would have broken CI.
+
+### D-M7-11 — Dark, emerald-accented UI modelled on a reference site's visual language
+- **Decision:** the frontend uses a near-black background with soft bordered panels, an emerald→teal gradient for primary buttons, green monospace uppercase eyebrows, large headlines with a muted grey continuation, a three-segment "Step N of 3" bar, tap-to-select option cards (state, budget segment, seats, gearbox, home charging, yes/no trade-offs), and a large ₹ budget slider. Shared pieces live in `web/components/ui.tsx` (`Eyebrow`, `Pill`, `Card`, `Button`, `OptionCard`, `StepBar`, `PageTitle`).
+- **Why:** the developer asked for the look of autowisdom.in (screenshots provided). Only the visual style was borrowed; Tiebreaker keeps its own name, copy and logo, and no assets were copied.
+- **Behaviour unchanged:** the API calls, If-Match/Idempotency-Key handling and every field sent are as before. The budget is now chosen in lakh on a slider (or "No limit") and sent as rupees.

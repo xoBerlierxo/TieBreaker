@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+/* Dark, emerald-accented theme: near-black ground, soft bordered panels,
+   green monospace eyebrows, gradient primary buttons. */
+:root {
+  color-scheme: dark;
+}
+
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-[#050606] text-zinc-100 antialiased;
+  background-image: radial-gradient(60rem 30rem at 85% -10%, rgba(16, 185, 129, 0.08), transparent 60%);
+  background-attachment: fixed;
+}
+
+::selection {
+  @apply bg-emerald-500/30 text-white;
+}
+
+/* Range slider: emerald thumb on a dark track. */
+input[type="range"].tb-range {
+  @apply h-2 w-full cursor-pointer appearance-none rounded-full bg-zinc-800;
+}
+input[type="range"].tb-range::-webkit-slider-thumb {
+  @apply h-5 w-5 appearance-none rounded-full border-2 border-[#050606] bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.25)];
+}
+input[type="range"].tb-range::-moz-range-thumb {
+  @apply h-5 w-5 rounded-full border-2 border-[#050606] bg-emerald-400;
 }

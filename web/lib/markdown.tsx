@@ -13,7 +13,7 @@ function inline(text: string, key: string): ReactNode[] {
     if (m.index! > last) out.push(text.slice(last, m.index));
     const token = m[0];
     out.push(
-      token.startsWith("**") ? <strong key={`${key}-${i++}`}>{token.slice(2, -2)}</strong> : <em key={`${key}-${i++}`}>{token.slice(1, -1)}</em>,
+      token.startsWith("**") ? <strong key={`${key}-${i++}`} className="text-white">{token.slice(2, -2)}</strong> : <em key={`${key}-${i++}`}>{token.slice(1, -1)}</em>,
     );
     last = m.index! + token.length;
   }
@@ -28,7 +28,7 @@ export function Markdown({ source }: { source: string }) {
     if (list.length) {
       const items = list;
       blocks.push(
-        <ul key={`ul-${blocks.length}`} className="ml-5 list-disc space-y-1">
+        <ul key={`ul-${blocks.length}`} className="ml-5 list-disc space-y-1 marker:text-emerald-400">
           {items.map((li, i) => (
             <li key={i}>{inline(li, `li-${blocks.length}-${i}`)}</li>
           ))}
@@ -47,7 +47,7 @@ export function Markdown({ source }: { source: string }) {
     if (!line.trim()) return;
     const h = /^(#{1,3})\s+(.*)$/.exec(line);
     if (h) {
-      const cls = h[1].length === 1 ? "text-2xl font-bold mt-2" : h[1].length === 2 ? "text-xl font-semibold mt-4" : "text-lg font-semibold mt-3";
+      const cls = h[1].length === 1 ? "text-2xl font-bold mt-2 text-white" : h[1].length === 2 ? "text-xl font-semibold mt-4 text-white" : "text-lg font-semibold mt-3 text-white";
       blocks.push(
         <p key={n} className={cls}>
           {inline(h[2], `h-${n}`)}
@@ -58,5 +58,5 @@ export function Markdown({ source }: { source: string }) {
     blocks.push(<p key={n}>{inline(line, `p-${n}`)}</p>);
   });
   flush();
-  return <div className="space-y-2 leading-relaxed">{blocks}</div>;
+  return <div className="space-y-2 leading-relaxed text-zinc-300">{blocks}</div>;
 }

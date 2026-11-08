@@ -5,7 +5,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { Report } from "@/components/Report";
-import { Button, Card, ErrorBanner } from "@/components/ui";
+import { Button, Card, ErrorBanner, PageTitle, StepBar } from "@/components/ui";
 import { API_BASE, ApiError, errorMessage, request } from "@/lib/api";
 import type { ProgressEvent, ReportView } from "@/lib/types";
 
@@ -77,17 +77,19 @@ function Results() {
     const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${report.share_id}` : undefined;
     return <Report report={report} shareUrl={shareUrl} />;
   }
+  const pctDone = progress?.progress ?? 2;
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">3 · Simulating your futures</h1>
+      <PageTitle muted="tens of thousands of futures." sub="Fuel prices, mileage, repairs and resale vary in every future. Each car is costed in each one, in today's rupees.">
+        Simulating
+      </PageTitle>
+      <StepBar step={3} percent={67 + Math.round(pctDone / 3)} />
       <ErrorBanner message={error} />
-      <Card>
-        <p className="mb-2 text-sm text-slate-600">
-          {progress ? `${progress.status}… ${progress.progress}%` : "Waiting for a worker…"}
-        </p>
-        <div className="mb-4 h-3 rounded bg-slate-100">
-          <div className="h-3 rounded bg-indigo-500 transition-all" style={{ width: `${progress?.progress ?? 2}%` }} />
+      <Card eyebrow={progress ? `${progress.status} · ${progress.progress}%` : "Waiting for a worker…"}>
+        <div className="mb-5 h-3 rounded-full bg-zinc-800">
+          <div className="h-3 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all" style={{ width: `${pctDone}%` }} />
         </div>
+        <p className="mb-5 font-mono text-xs text-zinc-500">Live progress over server-sent events · results are reproducible by seed</p>
         {runId && progress?.status !== "done" && (
           <Button variant="secondary" onClick={cancel}>
             Cancel

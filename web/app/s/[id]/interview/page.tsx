@@ -4,9 +4,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, ErrorBanner, inputClass } from "@/components/ui";
+import { Button, Card, ErrorBanner, inputClass, OptionCard, PageTitle, StepBar } from "@/components/ui";
 import { errorMessage, isVersionConflict, request, submitIdempotent } from "@/lib/api";
-import { pct } from "@/lib/format";
+import { inr, pct } from "@/lib/format";
 import type { NextResponse, Question, SessionView } from "@/lib/types";
 
 export default function InterviewPage() {
@@ -56,38 +56,56 @@ export default function InterviewPage() {
     }
   }
 
+  const tradeoff = next?.question?.phase === "tradeoff";
+  const progress = next?.done ? 66 : tradeoff ? 45 + Math.min(20, (next?.questions_asked ?? 0) * 2) : 40;
+
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">2 · A few questions</h1>
+      <PageTitle muted="only the questions that matter." sub="First how you'll use the car, then a few rupee trade-offs. Each trade-off question is picked because it's the one most likely to change the answer.">
+        A few questions,
+      </PageTitle>
+      <StepBar step={2} percent={progress} />
       <ErrorBanner message={error} />
-      {next?.p_best && next.p_best.length > 0 && (
-        <Card title="Right now">
-          <ul className="space-y-1 text-sm">
-            {next.p_best.map((p) => (
-              <li key={p.item_id} className="flex items-center gap-2">
-                <span className="w-64 truncate">{p.label}</span>
-                <span className="h-2 rounded bg-indigo-500" style={{ width: `${Math.max(2, p.p_best * 200)}px` }} />
-                <span>{pct(p.p_best)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-xs text-slate-500">Probability of being your best choice, from quick simulations.</p>
+
+      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+        <div>
+          {next && !next.done && next.question && <QuestionCard key={next.question.question_id} q={next.question} busy={busy} onAnswer={answer} />}
+          {next?.done && (
+            <Card eyebrow="Interview complete" title="That's all we need.">
+              <p className="mb-5 text-sm text-zinc-400">
+                {next.reason === "leader_confident" && "One car already leads clearly. "}
+                {next.reason === "low_information_gain" && "More questions wouldn't change the answer much. "}
+                {next.reason === "single_car" && "Only one car meets your hard limits. "}
+                Now the full simulation runs: 50,000 futures of owning each car.
+              </p>
+              <Button onClick={simulate} disabled={busy}>
+                Run the full simulation →
+              </Button>
+            </Card>
+          )}
+        </div>
+
+        <Card eyebrow="Right now" aside={next ? `${next.questions_asked} asked · ${next.questions_left} left` : undefined}>
+          {next?.p_best && next.p_best.length > 0 ? (
+            <ul className="space-y-4">
+              {next.p_best.map((p) => (
+                <li key={p.item_id}>
+                  <div className="mb-1 flex justify-between gap-2 text-sm">
+                    <span className="truncate text-zinc-300">{p.label}</span>
+                    <span className="font-mono text-emerald-400">{pct(p.p_best)}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-zinc-800">
+                    <div className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all" style={{ width: `${Math.max(2, p.p_best * 100)}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-zinc-500">Live odds appear once your usage is known.</p>
+          )}
+          <p className="mt-5 font-mono text-xs text-zinc-600">Probability of being your best choice, from quick simulations.</p>
         </Card>
-      )}
-      {next && !next.done && next.question && <QuestionCard key={next.question.question_id} q={next.question} busy={busy} onAnswer={answer} />}
-      {next?.done && (
-        <Card title="That's all we need">
-          <p className="mb-3 text-sm text-slate-600">
-            {next.reason === "leader_confident" && "One car already leads clearly. "}
-            {next.reason === "low_information_gain" && "Further questions wouldn't change the answer much. "}
-            {next.reason === "single_car" && "Only one car meets your constraints. "}
-            Now we run the full simulation (tens of thousands of futures).
-          </p>
-          <Button onClick={simulate} disabled={busy}>
-            Run the full simulation
-          </Button>
-        </Card>
-      )}
+      </div>
     </div>
   );
 }
@@ -102,44 +120,43 @@ function QuestionCard({ q, busy, onAnswer }: { q: Question; busy: boolean; onAns
   const [tenure, setTenure] = useState("");
 
   const rangeKey = q.question_id === "usage:km_per_month" ? "km_per_month" : "city_share_pct";
+  const isTradeoff = q.phase === "tradeoff";
 
   return (
-    <Card title={q.phase === "tradeoff" ? "Trade-off" : "Your usage"}>
-      <p className="mb-3">{q.text}</p>
-      {q.warning && <p className="mb-3 text-xs text-amber-700">Note: {q.warning}</p>}
+    <Card eyebrow={isTradeoff ? `Trade-off · would you pay ${q.threshold_inr ? inr(q.threshold_inr) : ""}?` : "Your usage"}>
+      <p className="mb-5 text-lg text-white">{q.text}</p>
+      {q.warning && <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-200">Note: {q.warning}</p>}
 
       {q.kind === "range" && (
-        <div className="flex items-center gap-2">
-          <input className={inputClass} placeholder="from" value={lo} onChange={(e) => setLo(e.target.value)} />
-          <span>–</span>
-          <input className={inputClass} placeholder="to" value={hi} onChange={(e) => setHi(e.target.value)} />
-          <span className="whitespace-nowrap text-sm text-slate-500">{q.unit}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <input className={`${inputClass} max-w-32`} placeholder="from" value={lo} onChange={(e) => setLo(e.target.value)} />
+          <span className="text-zinc-500">to</span>
+          <input className={`${inputClass} max-w-32`} placeholder="to" value={hi} onChange={(e) => setHi(e.target.value)} />
+          <span className="font-mono text-xs text-zinc-500">{q.unit}</span>
           <Button disabled={busy} onClick={() => onAnswer(q.question_id, { [rangeKey]: [Number(lo), Number(hi)] })}>
-            Next
+            Next →
           </Button>
         </div>
       )}
 
       {q.kind === "number" && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <input className={`${inputClass} max-w-32`} value={value} onChange={(e) => setValue(e.target.value)} />
-          <span className="text-sm text-slate-500">{q.unit}</span>
+          <span className="font-mono text-xs text-zinc-500">{q.unit}</span>
           <Button disabled={busy} onClick={() => onAnswer(q.question_id, { ownership_years: Number(value) })}>
-            Next
+            Next →
           </Button>
         </div>
       )}
 
       {q.kind === "financing" && (
-        <div className="space-y-2">
-          <label className="mr-4 text-sm">
-            <input type="radio" checked={!loan} onChange={() => setLoan(false)} /> Cash
-          </label>
-          <label className="text-sm">
-            <input type="radio" checked={loan} onChange={() => setLoan(true)} /> Loan
-          </label>
+        <div className="space-y-4">
+          <div className="grid max-w-md grid-cols-2 gap-3">
+            <OptionCard selected={!loan} onClick={() => setLoan(false)} title="Cash" subtitle="pay in full" />
+            <OptionCard selected={loan} onClick={() => setLoan(true)} title="Loan" subtitle="EMI" />
+          </div>
           {loan && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <input className={inputClass} placeholder="Amount ₹" value={principal} onChange={(e) => setPrincipal(e.target.value)} />
               <input className={inputClass} placeholder="Rate % a year" value={rate} onChange={(e) => setRate(e.target.value)} />
               <input className={inputClass} placeholder="Tenure months" value={tenure} onChange={(e) => setTenure(e.target.value)} />
@@ -154,34 +171,24 @@ function QuestionCard({ q, busy, onAnswer }: { q: Question; busy: boolean; onAns
               )
             }
           >
-            Next
+            Next →
           </Button>
         </div>
       )}
 
       {q.kind === "choice" && (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {q.options?.map((o) => (
-            <Button key={o} variant="secondary" disabled={busy} onClick={() => onAnswer(q.question_id, { parking: o })}>
-              {o}
-            </Button>
+            <OptionCard key={o} selected={false} disabled={busy} onClick={() => onAnswer(q.question_id, { parking: o })} title={o[0].toUpperCase() + o.slice(1)} />
           ))}
-          {q.optional && (
-            <Button variant="secondary" disabled={busy} onClick={() => onAnswer(q.question_id, { skipped: true })}>
-              Skip
-            </Button>
-          )}
+          {q.optional && <OptionCard selected={false} disabled={busy} onClick={() => onAnswer(q.question_id, { skipped: true })} title="Skip" subtitle="optional" />}
         </div>
       )}
 
       {q.kind === "yes_no" && (
-        <div className="flex gap-2">
-          <Button disabled={busy} onClick={() => onAnswer(q.question_id, { yes: true })}>
-            Yes, I would
-          </Button>
-          <Button variant="secondary" disabled={busy} onClick={() => onAnswer(q.question_id, { yes: false })}>
-            No
-          </Button>
+        <div className="grid max-w-lg grid-cols-2 gap-3">
+          <OptionCard selected={false} disabled={busy} onClick={() => onAnswer(q.question_id, { yes: true })} title="Yes, I would" subtitle="worth it to me" />
+          <OptionCard selected={false} disabled={busy} onClick={() => onAnswer(q.question_id, { yes: false })} title="No" subtitle="not for that much" />
         </div>
       )}
     </Card>
