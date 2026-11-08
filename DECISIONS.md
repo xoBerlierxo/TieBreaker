@@ -595,3 +595,29 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 - SSE connections aren't capped per IP (each ends after 10 minutes).
 - `idempotency_keys` rows are never purged (there's an index on `created_at` for a future cleanup job).
 - The frontend CSP doesn't restrict scripts, since Next.js needs nonces for that.
+
+
+---
+
+## Real car data (2026-11-08)
+
+### D-DATA-1 — The catalogue now holds four real sedans; the fictional samples moved to test fixtures only
+- **Decision:** `data/seed/` holds Honda Amaze V 1.2 MT, Hyundai Verna HX2 1.5 MT, Skoda Slavia Classic 1.0 TSI MT and VW Virtus Comfortline 1.0 TSI MT, as researched by the developer, with one source per field. All four are `verified: true`. Unknown values (kerb weights, the Virtus airbag count, unlimited-km warranties) are `null`, never estimated. The Sample Motors cars remain only in `testdata/seed/` (D-M7-10).
+
+### D-DATA-2 — Sourced on-road prices per state (migration 0011, `variant_prices`)
+- **Decision:** a variant can carry `on_road_prices` (state, city, ₹, includes_insurance, source, date). For a new car with no user override, `PriceOf` uses the sourced price for the session's state (source `catalogue`), otherwise the estimate. The UI labels which one is used.
+- **Why:** the computed estimate depends on placeholder road-tax assumptions, while a real on-road quote is what a buyer actually pays.
+
+### D-DATA-3 — Don't charge first-year insurance twice
+- **Decision:** `sim.Car.FirstYearInsuranceIncluded` skips the year-1 premium for new cars whose upfront price is an on-road quote that includes insurance. Defaults to false, so earlier results and the golden hash are unchanged.
+
+### D-DATA-4 — Bug fix: a warranty with a year limit but no km limit was ignored
+- **Found:** with `warranty_km: null`, the engine received 0 km, so `odometer < 0` was never true and the warranty never reduced repair costs. This affected any "N years / unlimited km" warranty (Amaze, Verna).
+- **Fix:** years known and km unknown → the km limit is treated as unlimited (1e9 km; finite because inputs are stored as JSON).
+
+### D-DATA-5 — "Six airbags" comes from the airbag count, and is skipped when unknown
+- **Why:** the interview treated "not listed" as "doesn't have". With the Virtus's airbag count unconfirmed, it would have asked "would you pay ₹X for six airbags?" as if the Virtus lacked them. Now `6_airbags` is derived from `airbags` when known; if any car's count is unknown (and the feature isn't listed), the question isn't asked.
+
+### D-DATA-6 — Finding: these four cars make every pairing a clear win
+- **Result** (20,000 futures, Chennai, 800–1,200 km/month, 5 years, cash): Amaze 100% against each rival; Slavia 99–100% against Verna and Virtus; Virtus 85% vs Verna. Every pairing starts above the 0.65 stop threshold, so the interview asks no trade-off questions (SPEC §8.5).
+- **Why:** all four are manual petrol sedans with equal 5-star ratings, so price and mileage dominate. This is a correct, honest outcome. For a demo that shows the interview and a tipping point, the cars need real trade-offs (see the README/SETUP guidance).

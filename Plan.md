@@ -782,4 +782,5 @@ Two rules are enforced in the services rather than in SQL, each with a test: "ve
 | D15 | Tipping points are computed in the worker | They need about 100 quick sims, which is too slow for a request. |
 | D16 | Rate limits for "LLM-backed endpoints" sit on `POST /simulations` (which triggers prose), plus a daily cap in the worker | In v1, prose is generated inside the job, not on a request path. |
 | D17 | Gemini P2 uses (free-text usage parsing, brochure import) are deferred to an optional M8 | Q4. |
+| D19 | Extra table `variant_prices` (sourced on-road price per state), `Car.FirstYearInsuranceIncluded` in the engine | Real on-road quotes are the most trustworthy price a buyer has; most include first-year insurance, which the engine would otherwise count twice (DECISIONS D-DATA-2/3). |
 | D18 | An extra `internal/apperr` package for shared domain errors; `internal/testutil` for containers | §18 wants errors mapped in one place, with no import cycles between `http` and the services. |

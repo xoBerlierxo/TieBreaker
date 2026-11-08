@@ -123,6 +123,11 @@ Create one file per model in `data/seed/`, e.g. `data/seed/<make>-<model>.json`.
       "warranty_km": <number or null>,
       "key_features": ["rear_camera", "esc"],      // only keys from the list below count in the interview
       "verified": true,
+      "on_road_prices": [                          // optional: a sourced on-road price per state
+        { "state": "TN", "city": "Chennai", "on_road_price_inr": <number>,
+          "includes_insurance": true,              // true if the quote contains first-year insurance
+          "source_url": "https://…", "checked_at": "2026-11-08" }
+      ],
       "sources": [
         { "field_name": "ex_showroom_price_inr", "source_url": "https://…", "checked_at": "2026-11-08" },
         { "field_name": "safety_rating_stars",   "source_url": "https://…", "checked_at": "2026-11-08" }
@@ -134,6 +139,10 @@ Create one file per model in `data/seed/`, e.g. `data/seed/<make>-<model>.json`.
 ```
 
 (The `//` comments and `<…>` markers are explanations only: the real file must be plain JSON with real values.)
+
+**On-road prices:** when a session's state has a sourced on-road price, the app uses it instead of its estimate (ex-showroom + road tax + registration), and labels it "sourced on-road price". Set `includes_insurance: true` when the quoted price contains first-year insurance (most on-road quotes do); the simulation then doesn't charge year-1 insurance a second time.
+
+**Unknown is better than guessed:** leave a value `null` if you can't source it. For example, with `airbags: null` the interview never claims the car lacks six airbags, and a warranty with a year limit but no km limit counts as "unlimited km".
 
 **Feature keys** (the only ones the interview asks about): `6_airbags`, `esc`, `rear_camera`, `connected_car`, `sunroof`, `ventilated_seats`, `adas`, `auto_climate`, `cruise_control`, `360_camera`. Other keys are stored but ignored.
 

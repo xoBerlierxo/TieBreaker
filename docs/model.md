@@ -61,7 +61,7 @@ NetCost       = OwnershipCost − PreferenceValue
 | Real efficiency | claimed × [c·U(city range) + (1−c)·U(highway range)]; the same U is used for every car of that fuel in a future; c = city share from U(city-share range) | `evaluateCar` |
 | Energy (ICE, CNG, hybrid) | km_t / real efficiency × price_t | `evaluateCar` |
 | Energy (EV) | km_t / (real km/kWh × charging efficiency) × tariff_t; tariff = home if home charging, otherwise public | `evaluateCar`, `prepare` |
-| Insurance | rate × IDV_t; IDV_t = basis × IDV(age_t) / (IDV(age at purchase) if used, else 1) | `evaluateCar` |
+| Insurance | year 1 is skipped when the upfront price is a sourced on-road quote that already includes first-year insurance; otherwise rate × IDV_t; IDV_t = basis × IDV(age_t) / (IDV(age at purchase) if used, else 1) | `evaluateCar` |
 | Service | max(km_t / interval, minimum visits) × cost per visit × (1+i)^(t−1) | `evaluateCar` |
 | Tyres | km_t / tyre life × set cost × (1+i)^(t−1) | `evaluateCar` |
 | Repairs | N ~ Poisson(λ_t), λ_t = base × (1 + a·age_t) × (1 + b·odo_t/100k) × grade × (used mult. if used); each event costs exp(μ_r + σ_r·Z) × (1+i)^(t−1); inside warranty (age_t < years and odo_t < km), cost × (1 − coverage) | `evaluateCar` |
