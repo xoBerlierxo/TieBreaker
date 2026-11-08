@@ -85,7 +85,10 @@ func Candidates(cars []catalog.Variant) []Attribute {
 	}))
 	for _, f := range catalog.KnownFeatures() {
 		feature := f
-		has, _ := collect(cars, func(v catalog.Variant) (float64, bool) { return boolTo01(v.HasFeature(feature.Key)), true })
+		has, known := collect(cars, func(v catalog.Variant) (float64, bool) { return hasFeature(v, feature.Key) })
+		if !known {
+			continue // a car's equipment is unknown: never present a guess as a difference
+		}
 		add(newAttribute(featurePrefix+feature.Key, feature.Label, has, func(v float64) string {
 			if v == 1 {
 				return feature.Label
@@ -152,6 +155,23 @@ func collect(cars []catalog.Variant, get func(catalog.Variant) (float64, bool)) 
 		out[i] = v
 	}
 	return out, true
+}
+
+// hasFeature reports whether a car has a feature, and whether that is known.
+// "6_airbags" is derived from the airbag count when it is known; if the count
+// is unknown and the feature isn't listed, the answer is unknown (we must not
+// claim the car lacks airbags just because the data is missing).
+func hasFeature(v catalog.Variant, key string) (float64, bool) {
+	if v.HasFeature(key) {
+		return 1, true
+	}
+	if key == "6_airbags" {
+		if v.Airbags == nil {
+			return 0, false
+		}
+		return boolTo01(*v.Airbags >= 6), true
+	}
+	return 0, true
 }
 
 func boolTo01(b bool) float64 {

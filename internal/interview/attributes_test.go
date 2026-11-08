@@ -130,3 +130,16 @@ func TestQuestionText_UsesHorizonAndCarNames(t *testing.T) {
 		}
 	}
 }
+
+func TestCandidates_SixAirbagsUsesCountAndSkipsWhenUnknown(t *testing.T) {
+	a, b := testCar("A"), testCar("B")
+	a.Airbags, a.KeyFeatures = ptr(6), []string{"rear_camera"} // six airbags known from the count
+	b.Airbags = ptr(2)
+	if got := keys(Candidates([]catalog.Variant{a, b})); len(got) != 1 || got[0] != "feature:6_airbags" {
+		t.Fatalf("candidates = %v, want the six-airbags difference from the counts", got)
+	}
+	b.Airbags = nil // unknown: must not be presented as "no six airbags"
+	if got := keys(Candidates([]catalog.Variant{a, b})); len(got) != 0 {
+		t.Fatalf("candidates = %v, want none when one car's airbag count is unknown", got)
+	}
+}
