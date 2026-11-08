@@ -86,6 +86,11 @@ func CanVerify(v Variant, sources []VariantSource) error {
 		}
 	}
 	var missing []string
+	for _, p := range v.OnRoadPrices {
+		if IsPlaceholderURL(p.SourceURL) {
+			missing = append(missing, "on_road_prices."+p.State)
+		}
+	}
 	for _, f := range v.PresentFields() {
 		if !sourced[f] {
 			missing = append(missing, f)

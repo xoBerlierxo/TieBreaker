@@ -97,7 +97,8 @@ type Variant struct {
 	CreatedAt          time.Time       `gorm:"column:created_at" json:"created_at,omitzero"`
 	UpdatedAt          time.Time       `gorm:"column:updated_at" json:"updated_at,omitzero"`
 
-	Sources []VariantSource `gorm:"foreignKey:VariantID" json:"sources,omitempty"`
+	Sources      []VariantSource `gorm:"foreignKey:VariantID" json:"sources,omitempty"`
+	OnRoadPrices []OnRoadPrice   `gorm:"foreignKey:VariantID" json:"on_road_prices,omitempty"`
 }
 
 // TableName tells GORM the table name explicitly (instead of guessing).
@@ -155,6 +156,10 @@ func (v Variant) Validate() error {
 		if !c.ok {
 			return apperr.Validation(c.field, c.field+" "+c.msg)
 		}
+	}
+
+	if err := validateOnRoadPrices(v.OnRoadPrices); err != nil {
+		return err
 	}
 
 	seen := make(map[string]bool, len(v.KeyFeatures))

@@ -200,3 +200,33 @@ func TestCreate_DuplicateSlugIsValidationError(t *testing.T) {
 		t.Fatalf("duplicate slug err = %v, want validation error", err)
 	}
 }
+
+func TestOnRoadPrices_RoundTripAndReplace(t *testing.T) {
+	resetCatalog(t)
+	svc := NewService(testDB)
+	v := fictionalPetrol()
+	v.OnRoadPrices = []OnRoadPrice{{State: "TN", OnRoadPriceINR: 600_000, IncludesInsurance: true,
+		SourceURL: "https://price.test/tn", CheckedAt: NewDate(2026, 11, 8)}}
+	created := mustCreate(t, svc, v)
+
+	got, err := svc.Get(context.Background(), created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p, ok := got.OnRoadPriceFor("TN"); !ok || p.OnRoadPriceINR != 600_000 || !p.IncludesInsurance {
+		t.Fatalf("on-road prices after Get = %+v", got.OnRoadPrices)
+	}
+	many, _ := svc.GetMany(context.Background(), []string{created.ID})
+	if _, ok := many[created.ID].OnRoadPriceFor("TN"); !ok {
+		t.Error("GetMany must load on-road prices (the session's pricing needs them)")
+	}
+
+	v.OnRoadPrices = []OnRoadPrice{{State: "KA", OnRoadPriceINR: 650_000, SourceURL: "https://price.test/ka", CheckedAt: NewDate(2026, 11, 8)}}
+	updated, err := svc.Update(context.Background(), created.ID, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := updated.OnRoadPriceFor("TN"); ok || len(updated.OnRoadPrices) != 1 {
+		t.Errorf("update did not replace on-road prices: %+v", updated.OnRoadPrices)
+	}
+}

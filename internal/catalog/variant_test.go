@@ -182,3 +182,37 @@ func TestSegment_FromBodyType(t *testing.T) {
 		}
 	}
 }
+
+func TestVariantValidate_OnRoadPrices(t *testing.T) {
+	ok := OnRoadPrice{State: "TN", OnRoadPriceINR: 900_000, SourceURL: "https://example.test/p", CheckedAt: NewDate(2026, 11, 8)}
+	tests := []struct {
+		name  string
+		price []OnRoadPrice
+		valid bool
+	}{
+		{"valid", []OnRoadPrice{ok}, true},
+		{"unknown state", []OnRoadPrice{{State: "XX", OnRoadPriceINR: 1, SourceURL: "https://x.test", CheckedAt: NewDate(2026, 1, 1)}}, false},
+		{"duplicate state", []OnRoadPrice{ok, ok}, false},
+		{"zero price", []OnRoadPrice{{State: "TN", SourceURL: "https://x.test", CheckedAt: NewDate(2026, 1, 1)}}, false},
+		{"no source", []OnRoadPrice{{State: "TN", OnRoadPriceINR: 1, CheckedAt: NewDate(2026, 1, 1)}}, false},
+	}
+	for _, tt := range tests {
+		v := fictionalPetrol()
+		v.OnRoadPrices = tt.price
+		if err := v.Validate(); (err == nil) != tt.valid {
+			t.Errorf("%s: Validate() = %v", tt.name, err)
+		}
+	}
+}
+
+func TestCanVerify_RejectsPlaceholderOnRoadPriceSource(t *testing.T) {
+	v := fictionalPetrol()
+	var sources []VariantSource
+	for _, f := range v.PresentFields() {
+		sources = append(sources, VariantSource{FieldName: f, SourceURL: "https://brochure.test/a.pdf"})
+	}
+	v.OnRoadPrices = []OnRoadPrice{{State: "TN", OnRoadPriceINR: 1, SourceURL: "TODO", CheckedAt: NewDate(2026, 1, 1)}}
+	if err := CanVerify(v, sources); err == nil {
+		t.Fatal("verified with a TODO on-road price source")
+	}
+}

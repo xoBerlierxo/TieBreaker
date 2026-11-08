@@ -85,6 +85,7 @@ func (s *Service) Get(ctx context.Context, id string) (Variant, error) {
 	var v Variant
 	err := s.db.WithContext(ctx).
 		Preload("Sources", func(db *gorm.DB) *gorm.DB { return db.Order("field_name, id") }).
+		Preload("OnRoadPrices", func(db *gorm.DB) *gorm.DB { return db.Order("state") }).
 		First(&v, "id = ?", id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return Variant{}, apperr.New(apperr.ErrNotFound, "variant not found")
@@ -109,7 +110,8 @@ func (s *Service) GetMany(ctx context.Context, ids []string) (map[string]Variant
 		return out, nil
 	}
 	var rows []Variant
-	if err := s.db.WithContext(ctx).Where("id IN ?", valid).Find(&rows).Error; err != nil {
+	// On-road prices are needed by the session's pricing; sources are not.
+	if err := s.db.WithContext(ctx).Preload("OnRoadPrices").Where("id IN ?", valid).Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("loading variants: %w", err)
 	}
 	for _, v := range rows {
@@ -199,8 +201,8 @@ func (s *Service) checkWritable(v Variant) error {
 // insertVariant inserts v and its sources using tx. v.ID is filled in by the
 // database default.
 func insertVariant(tx *gorm.DB, v *Variant) error {
-	sources := v.Sources
-	v.Sources = nil
+	sources, prices := v.Sources, v.OnRoadPrices
+	v.Sources, v.OnRoadPrices = nil, nil
 	if err := tx.Omit(clause.Associations).Create(v).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return apperr.Validation("slug", "a variant with this slug already exists")
@@ -210,14 +212,17 @@ func insertVariant(tx *gorm.DB, v *Variant) error {
 	if err := insertSources(tx, v.ID, sources); err != nil {
 		return err
 	}
-	v.Sources = sources
+	if err := replaceOnRoadPrices(tx, v.ID, prices); err != nil {
+		return err
+	}
+	v.Sources, v.OnRoadPrices = sources, prices
 	return nil
 }
 
 // replaceVariant overwrites every column of an existing variant and replaces its sources.
 func replaceVariant(tx *gorm.DB, v *Variant) error {
-	sources := v.Sources
-	v.Sources = nil
+	sources, prices := v.Sources, v.OnRoadPrices
+	v.Sources, v.OnRoadPrices = nil, nil
 	if err := tx.Omit(clause.Associations).Select("*").Omit("id", "created_at").
 		Where("id = ?", v.ID).Updates(v).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
@@ -231,7 +236,10 @@ func replaceVariant(tx *gorm.DB, v *Variant) error {
 	if err := insertSources(tx, v.ID, sources); err != nil {
 		return err
 	}
-	v.Sources = sources
+	if err := replaceOnRoadPrices(tx, v.ID, prices); err != nil {
+		return err
+	}
+	v.Sources, v.OnRoadPrices = sources, prices
 	return nil
 }
 
