@@ -29,7 +29,7 @@ import (
 
 func main() {
 	base := flag.String("base", "http://localhost:8080", "API base URL")
-	query := flag.String("q", "sample", "catalogue search used to pick 2–4 cars (e.g. -q nexon)")
+	query := flag.String("q", "", "catalogue search used to pick 2–4 cars (default: the first 4 in the catalogue)")
 	flag.Parse()
 	c := &client{base: strings.TrimRight(*base, "/"), http: &http.Client{Timeout: 30 * time.Second}}
 	if err := run(c, *query); err != nil {

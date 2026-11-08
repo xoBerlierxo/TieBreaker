@@ -35,7 +35,7 @@ export interface CarView {
   warnings: string[];
   eliminated: boolean;
   eliminations?: Elimination[];
-  price?: { upfront_inr: number; budget_inr: number };
+  price?: { upfront_inr: number; budget_inr: number; source?: "estimate" | "catalogue" | "override" | "asking"; insurance_included?: boolean };
 }
 
 export interface SessionView {

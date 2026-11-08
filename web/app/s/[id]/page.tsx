@@ -74,7 +74,18 @@ export default function ShortlistPage() {
                   {c.label}
                   <UnverifiedBadge verified={c.verified} />
                 </p>
-                {c.price && <p className="font-mono text-xs text-zinc-500">{inr(c.price.budget_inr)} · {c.condition}</p>}
+                {c.price && (
+                  <p className="font-mono text-xs text-zinc-500">
+                    {inr(c.price.budget_inr)} · {c.condition} ·{" "}
+                    {c.price.source === "catalogue" ? (
+                      <span className="text-emerald-400">sourced on-road price</span>
+                    ) : c.price.source === "estimate" ? (
+                      <span className="text-amber-300">estimated on-road</span>
+                    ) : (
+                      c.price.source
+                    )}
+                  </p>
+                )}
               </div>
               <button className="text-xs text-zinc-500 hover:text-red-300" onClick={() => mutate("DELETE", `/v1/sessions/${id}/cars/${c.id}`)}>
                 Remove
