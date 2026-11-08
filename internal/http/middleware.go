@@ -29,6 +29,20 @@ func RequestID(c *gin.Context) string {
 	return c.GetString(requestIDKey)
 }
 
+// securityHeaders sets browser hardening headers on every response. The API
+// only serves JSON and SSE, so it can forbid framing, sniffing, referrers and
+// any active content outright.
+func securityHeaders() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h := c.Writer.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		c.Next()
+	}
+}
+
 // requestID keeps a valid incoming X-Request-ID (useful for tracing through a
 // proxy) or generates a new random one, and echoes it in the response.
 func requestID() gin.HandlerFunc {

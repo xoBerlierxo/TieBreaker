@@ -121,6 +121,31 @@ func TestLoad_ProductionRequiresLongJWTSecret(t *testing.T) {
 	}
 }
 
+func TestLoad_ProductionRejectsPublishedPlaceholderSecrets(t *testing.T) {
+	for _, secret := range []string{
+		"dev-only-insecure-jwt-secret-change-me", // docker-compose.yml default (38 chars, passes the length check)
+		"change-me-to-a-long-random-secret-value-xx",
+	} {
+		_, err := Load(env(with(required(), "APP_ENV", "production", "JWT_SECRET", secret)))
+		if err == nil || !strings.Contains(err.Error(), "placeholder") {
+			t.Errorf("JWT_SECRET %q accepted in production (err %v)", secret, err)
+		}
+	}
+	if _, err := Load(env(with(required(), "APP_ENV", "development", "JWT_SECRET", "dev-only-insecure-jwt-secret-change-me"))); err != nil {
+		t.Errorf("development must keep accepting the dev default: %v", err)
+	}
+}
+
+func TestLoad_SecurityDefaults(t *testing.T) {
+	cfg, err := Load(env(required()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.HTTP.ClientIPHeader != "" || cfg.RateLimit.SessionsPerIPPerHour != 60 || cfg.RateLimit.QuestionsPerIPPerMinute != 60 {
+		t.Errorf("security defaults = %q / %d / %d", cfg.HTTP.ClientIPHeader, cfg.RateLimit.SessionsPerIPPerHour, cfg.RateLimit.QuestionsPerIPPerMinute)
+	}
+}
+
 func TestLoad_MissingRequiredListsAllMissing(t *testing.T) {
 	_, err := Load(env(map[string]string{}))
 	if err == nil {

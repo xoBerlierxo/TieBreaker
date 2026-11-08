@@ -47,6 +47,11 @@ type HTTPConfig struct {
 	MaxBodyBytes       int64
 	ShutdownGrace      time.Duration
 	CORSAllowedOrigins []string
+	// ClientIPHeader names a header set by the hosting platform's proxy that
+	// holds the real client IP (e.g. X-Real-IP). Empty = use the TCP peer
+	// address. Only set it if the platform always overwrites that header;
+	// otherwise clients could spoof it and dodge per-IP rate limits.
+	ClientIPHeader string
 }
 
 // LLMConfig configures the optional Gemini integration (SPEC §13).
@@ -96,7 +101,10 @@ type JobsConfig struct {
 type RateLimitConfig struct {
 	SimPerSession int
 	SimPerIP      int
-	Window        time.Duration
+	Window        time.Duration // for the simulation limits (one hour)
+
+	SessionsPerIPPerHour    int // session creation (database writes)
+	QuestionsPerIPPerMinute int // next-question runs up to ~64 quick simulations
 }
 
 var validAppEnvs = []string{"development", "test", "production"}
@@ -118,6 +126,7 @@ func Load(getenv func(string) string) (Config, error) {
 			MaxBodyBytes:       p.int64Min("HTTP_MAX_BODY_BYTES", 1<<20, 1),
 			ShutdownGrace:      p.seconds("SHUTDOWN_GRACE_SECONDS", 20),
 			CORSAllowedOrigins: p.list("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3000"}),
+			ClientIPHeader:     p.str("CLIENT_IP_HEADER", ""),
 		},
 		LLM: LLMConfig{
 			Enabled:         p.boolean("LLM_ENABLED", false),
@@ -156,6 +165,9 @@ func Load(getenv func(string) string) (Config, error) {
 			SimPerSession: p.intMin("RATE_LIMIT_SIM_PER_SESSION_PER_HOUR", 10, 0),
 			SimPerIP:      p.intMin("RATE_LIMIT_SIM_PER_IP_PER_HOUR", 30, 0),
 			Window:        time.Hour,
+
+			SessionsPerIPPerHour:    p.intMin("RATE_LIMIT_SESSIONS_PER_IP_PER_HOUR", 60, 0),
+			QuestionsPerIPPerMinute: p.intMin("RATE_LIMIT_QUESTIONS_PER_IP_PER_MINUTE", 60, 0),
 		},
 		DiscountRate: p.floatRange("DISCOUNT_RATE", 0.07, 0, 0.99),
 	}
@@ -169,6 +181,11 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	if cfg.AppEnv == "production" && len(cfg.JWTSecret) < 32 {
 		p.fail("JWT_SECRET must be at least 32 characters in production")
+	}
+	if cfg.AppEnv == "production" && isPublicPlaceholderSecret(cfg.JWTSecret) {
+		// The development defaults are published in this repository, so anyone
+		// could forge admin tokens with them.
+		p.fail("JWT_SECRET is a published development placeholder; generate a random one (openssl rand -base64 48)")
 	}
 	if n := len(cfg.Interview.Ladder); n > 0 && cfg.Interview.LadderCap <= cfg.Interview.Ladder[n-1] {
 		p.fail("INTERVIEW_LADDER_CAP (%d) must be greater than the top ladder rung (%d)",
@@ -220,6 +237,18 @@ func (c Config) LogValue() slog.Value {
 		slog.String("sim_quick_timeout", c.Sim.QuickTimeout.String()),
 		slog.String("llm_timeout", c.LLM.Timeout.String()),
 	)
+}
+
+// isPublicPlaceholderSecret reports whether s looks like one of the example
+// secrets committed in docker-compose.yml or .env.example.
+func isPublicPlaceholderSecret(s string) bool {
+	l := strings.ToLower(s)
+	for _, marker := range []string{"change-me", "changeme", "dev-only", "dev_only", "insecure", "example", "placeholder"} {
+		if strings.Contains(l, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // defaultAddr listens on $PORT when a platform (Railway, Heroku-style) sets it.

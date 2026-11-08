@@ -69,12 +69,17 @@ func serve(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		MaxBodyBytes:       cfg.HTTP.MaxBodyBytes,
 		JWTSecret:          cfg.JWTSecret,
 		CORSAllowedOrigins: cfg.HTTP.CORSAllowedOrigins,
+		ClientIPHeader:     cfg.HTTP.ClientIPHeader,
 		Catalog:            cat,
 		Sessions:           sessions,
 		Simulations:        sessions,
 		Reports:            report.NewService(db),
 		Progress:           jobs.RedisProgress{Client: rdb},
 		Limiter:            store.NewRateLimiter(rdb),
+		APILimits: httpapi.APILimits{
+			SessionsPerIPPerHour:    cfg.RateLimit.SessionsPerIPPerHour,
+			QuestionsPerIPPerMinute: cfg.RateLimit.QuestionsPerIPPerMinute,
+		},
 		SimLimits: httpapi.SimLimits{
 			PerSession: cfg.RateLimit.SimPerSession,
 			PerIP:      cfg.RateLimit.SimPerIP,

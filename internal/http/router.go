@@ -20,6 +20,7 @@ type Deps struct {
 	JWTSecret    string
 
 	CORSAllowedOrigins []string // browser origins allowed to call the API
+	ClientIPHeader     string   // header with the real client IP set by the platform proxy; "" = TCP peer
 
 	Catalog     CatalogService    // nil: catalogue routes are not mounted
 	Sessions    SessionService    // nil: session routes are not mounted
@@ -28,6 +29,13 @@ type Deps struct {
 	Progress    ProgressSource
 	Limiter     Limiter // nil: no rate limiting
 	SimLimits   SimLimits
+	APILimits   APILimits
+}
+
+// APILimits caps cheap-to-call but costly-to-serve public endpoints per client IP.
+type APILimits struct {
+	SessionsPerIPPerHour    int // POST /v1/sessions writes a row
+	QuestionsPerIPPerMinute int // GET next-question runs up to ~64 quick simulations
 }
 
 // SimLimits caps simulation starts (SPEC §14), per session and per client IP.
@@ -41,11 +49,17 @@ type SimLimits struct {
 // Call gin.SetMode before calling this (main does it once at startup).
 func NewRouter(d Deps) *gin.Engine {
 	r := gin.New()
-	// We don't run behind a trusted proxy by default; ClientIP() then uses the
-	// TCP peer address, which a client can't spoof with X-Forwarded-For.
+	// By default ClientIP() is the TCP peer address, which a client can't
+	// spoof with X-Forwarded-For. Behind a hosting proxy (Railway) every
+	// request would then share the proxy's IP, so the platform's client-IP
+	// header can be trusted instead (CLIENT_IP_HEADER).
 	_ = r.SetTrustedProxies(nil)
+	if d.ClientIPHeader != "" {
+		r.TrustedPlatform = d.ClientIPHeader
+	}
 
 	r.Use(
+		securityHeaders(),
 		cors(d.CORSAllowedOrigins),
 		requestID(),
 		accessLog(d.Logger),
@@ -78,12 +92,14 @@ func NewRouter(d Deps) *gin.Engine {
 
 	if d.Sessions != nil {
 		sh := sessionHandler{logger: d.Logger, sessions: d.Sessions}
-		v1.POST("/sessions", sh.create)
+		createLimit := limited(d, Limit{Name: "sessions-ip", Max: d.APILimits.SessionsPerIPPerHour, Window: time.Hour, Key: byClientIP})
+		questionLimit := limited(d, Limit{Name: "questions-ip", Max: d.APILimits.QuestionsPerIPPerMinute, Window: time.Minute, Key: byClientIP})
+		v1.POST("/sessions", append(createLimit, sh.create)...)
 		v1.GET("/sessions/:id", sh.get)
 		v1.POST("/sessions/:id/cars", sh.addCar)
 		v1.DELETE("/sessions/:id/cars/:itemId", sh.removeCar)
 		v1.PUT("/sessions/:id/constraints", sh.setConstraints)
-		v1.GET("/sessions/:id/next-question", sh.nextQuestion)
+		v1.GET("/sessions/:id/next-question", append(questionLimit, sh.nextQuestion)...)
 		v1.POST("/sessions/:id/answers", sh.submitAnswer)
 	}
 
@@ -111,4 +127,13 @@ func NewRouter(d Deps) *gin.Engine {
 	}
 
 	return r
+}
+
+// limited returns the rate-limit middleware for one rule, or nothing when
+// rate limiting isn't configured.
+func limited(d Deps, l Limit) []gin.HandlerFunc {
+	if d.Limiter == nil {
+		return nil
+	}
+	return []gin.HandlerFunc{rateLimit(d.Limiter, d.Logger, l)}
 }
