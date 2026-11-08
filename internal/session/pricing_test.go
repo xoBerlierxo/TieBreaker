@@ -228,3 +228,46 @@ func TestBuildInputs_ResolvesCarsAndWarnings(t *testing.T) {
 		t.Error("expected trade-off candidates between a petrol hatch and an EV")
 	}
 }
+
+func TestPriceOf_UsesSourcedOnRoadPriceForSessionState(t *testing.T) {
+	v := petrolVariant()
+	v.OnRoadPrices = []catalog.OnRoadPrice{{State: "TN", OnRoadPriceINR: 612_345, IncludesInsurance: true,
+		SourceURL: "https://example.test/price", CheckedAt: catalog.NewDate(2026, 11, 8)}}
+
+	p, err := PriceOf(Item{Condition: ConditionNew}, v, seedSet(t, "TN"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.UpfrontINR != 612_345 || p.BudgetINR != 612_345 || p.ValueBasisINR != 500_000 || p.Source != "catalogue" || !p.InsuranceIncluded {
+		t.Errorf("TN price = %+v, want the sourced on-road price", p)
+	}
+	// Another state has no sourced price: fall back to the estimate.
+	if p, _ := PriceOf(Item{Condition: ConditionNew}, v, seedSet(t, "KA")); p.Source != "estimate" {
+		t.Errorf("KA price source = %s, want estimate", p.Source)
+	}
+	// A user's override still wins.
+	if p, _ := PriceOf(Item{Condition: ConditionNew, OnRoadPriceOverrideINR: ptr(int64(700_000))}, v, seedSet(t, "TN")); p.UpfrontINR != 700_000 {
+		t.Errorf("override ignored: %+v", p)
+	}
+}
+
+func TestBuildInputs_UnlimitedKmWarrantyAndIncludedInsurance(t *testing.T) {
+	set := seedSet(t, "TN")
+	v := petrolVariant()
+	v.WarrantyYears = ptr(3) // km limit unknown/unlimited
+	price := Price{UpfrontINR: 600_000, BudgetINR: 600_000, ValueBasisINR: 500_000, InsuranceIncluded: true}
+	cars := []SurvivingCar{{Item: Item{ID: "i1", Condition: ConditionNew}, Variant: v, Price: price, Label: "A"}}
+	usage := interview.Usage{KmPerMonth: [2]float64{800, 1200}, CitySharePct: [2]float64{50, 70}, OwnershipYears: 5}
+	b, err := BuildInputs(cars, set, usage, Constraints{}, interview.NewTradeoffState(),
+		interview.Ladder{Rungs: []int64{0, 100_000}, Cap: 200_000}, 0.07, testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := b.Inputs.Cars[0]
+	if c.WarrantyYears != 3 || c.WarrantyKm < 1e8 {
+		t.Errorf("warranty = %v years / %v km, want 3 years with no km limit", c.WarrantyYears, c.WarrantyKm)
+	}
+	if !c.FirstYearInsuranceIncluded {
+		t.Error("FirstYearInsuranceIncluded not passed to the engine")
+	}
+}

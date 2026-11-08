@@ -141,6 +141,11 @@ type Car struct {
 	WarrantyYears         float64 `json:"warranty_years"`          // from first registration
 	WarrantyKm            float64 `json:"warranty_km"`
 
+	// FirstYearInsuranceIncluded is true when UpfrontINR is a quoted on-road
+	// price that already contains year-1 insurance, so the engine must not
+	// charge it again (DECISIONS.md D-DATA-3). New cars only.
+	FirstYearInsuranceIncluded bool `json:"first_year_insurance_included,omitempty"`
+
 	// ResaleCurve[k] is the resale value as a share of the new price at age k+1.
 	ResaleCurve []float64 `json:"resale_curve"`
 }

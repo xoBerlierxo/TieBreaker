@@ -169,3 +169,20 @@ func mean(xs []float64) float64 {
 	}
 	return s / float64(len(xs))
 }
+
+// TestInsurance_FirstYearSkippedWhenIncludedInOnRoadPrice: an on-road quote
+// that already contains year-1 insurance must not be charged again. With the
+// hand-checkable car, insurance becomes only year 2: 0.03 × 4,00,000 × 0.85 / 1.21.
+func TestInsurance_FirstYearSkippedWhenIncludedInOnRoadPrice(t *testing.T) {
+	in := handInputs()
+	in.Cars[0].FirstYearInsuranceIncluded = true
+	res := runOrFail(t, in, opts(5, 1, 1))
+	near(t, "insurance", res.Cars[0].Categories[CatInsurance][0], 10_200/1.21, 1e-6)
+
+	// Used cars ignore the flag: their asking price never includes insurance.
+	in.Cars[0].Used, in.Cars[0].AgeYears = true, 2
+	used := runOrFail(t, in, opts(5, 1, 1))
+	if used.Cars[0].Categories[CatInsurance][0] <= 10_200/1.21 {
+		t.Error("used car skipped year-1 insurance")
+	}
+}

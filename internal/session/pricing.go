@@ -107,7 +107,14 @@ type Price struct {
 	// ValueBasisINR is what insurance and resale are based on: ex-showroom (new) or asking (used).
 	ValueBasisINR float64 `json:"value_basis_inr"`
 	RoadTaxINR    float64 `json:"road_tax_inr,omitempty"`
-	Computed      bool    `json:"computed"` // false when the user gave an on-road override
+	Computed      bool    `json:"computed"` // true for the estimate from ex-showroom + road tax
+
+	// Source says where the price came from: "estimate" (ex-showroom + road
+	// tax + registration), "catalogue" (a sourced on-road price for the
+	// session's state), "override" (typed by the user) or "asking" (used car).
+	Source string `json:"source"`
+	// InsuranceIncluded: the on-road price already contains first-year insurance.
+	InsuranceIncluded bool `json:"insurance_included,omitempty"`
 }
 
 // PriceOf computes a car's price in the session's state.
@@ -115,7 +122,7 @@ func PriceOf(item Item, v catalog.Variant, set catalog.AssumptionSet) (Price, er
 	if item.Condition == ConditionUsed {
 		asking := float64(*item.AskingPriceINR)
 		transfer := set.UsedTransfer.Rate*asking + set.UsedTransfer.FixedINR
-		return Price{UpfrontINR: asking + transfer, BudgetINR: asking, ValueBasisINR: asking, Computed: true}, nil
+		return Price{UpfrontINR: asking + transfer, BudgetINR: asking, ValueBasisINR: asking, Computed: true, Source: "asking"}, nil
 	}
 	if item.OnRoadPriceOverrideINR != nil {
 		onRoad := float64(*item.OnRoadPriceOverrideINR)
@@ -123,7 +130,15 @@ func PriceOf(item Item, v catalog.Variant, set catalog.AssumptionSet) (Price, er
 		if v.ExShowroomPriceINR != nil {
 			basis = float64(*v.ExShowroomPriceINR)
 		}
-		return Price{UpfrontINR: onRoad, BudgetINR: onRoad, ValueBasisINR: basis}, nil
+		return Price{UpfrontINR: onRoad, BudgetINR: onRoad, ValueBasisINR: basis, Source: "override"}, nil
+	}
+	if p, ok := v.OnRoadPriceFor(set.State); ok {
+		onRoad := float64(p.OnRoadPriceINR)
+		basis := onRoad
+		if v.ExShowroomPriceINR != nil {
+			basis = float64(*v.ExShowroomPriceINR)
+		}
+		return Price{UpfrontINR: onRoad, BudgetINR: onRoad, ValueBasisINR: basis, Source: "catalogue", InsuranceIncluded: p.IncludesInsurance}, nil
 	}
 	if v.ExShowroomPriceINR == nil {
 		return Price{}, apperr.Validation("on_road_price_override_inr", v.DisplayName()+" has no ex-showroom price")
@@ -131,7 +146,7 @@ func PriceOf(item Item, v catalog.Variant, set catalog.AssumptionSet) (Price, er
 	ex := float64(*v.ExShowroomPriceINR)
 	tax := set.RoadTaxINR(v.FuelType, ex)
 	onRoad := ex + tax + set.RegistrationMiscINR
-	return Price{UpfrontINR: onRoad, BudgetINR: onRoad, ValueBasisINR: ex, RoadTaxINR: tax, Computed: true}, nil
+	return Price{UpfrontINR: onRoad, BudgetINR: onRoad, ValueBasisINR: ex, RoadTaxINR: tax, Computed: true, Source: "estimate"}, nil
 }
 
 // CarLabel is the name shown for a car: the variant name, plus "(used, 2019)" for used cars.

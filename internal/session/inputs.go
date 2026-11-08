@@ -76,6 +76,8 @@ func BuildInputs(cars []SurvivingCar, set catalog.AssumptionSet, usage interview
 			InsuranceRate:       set.InsurancePremiumRate[v.FuelType],
 			RepairBaseRate:      set.Repairs.BaseRatePerYear[v.FuelType],
 			ResaleCurve:         set.ResaleCurve[v.FuelType],
+
+			FirstYearInsuranceIncluded: sc.Price.InsuranceIncluded,
 		}
 		if v.ServiceIntervalKm != nil {
 			car.ServiceIntervalKm = float64(*v.ServiceIntervalKm)
@@ -86,8 +88,14 @@ func BuildInputs(cars []SurvivingCar, set catalog.AssumptionSet, usage interview
 		if v.WarrantyYears != nil {
 			car.WarrantyYears = float64(*v.WarrantyYears)
 		}
-		if v.WarrantyKm != nil {
+		switch {
+		case v.WarrantyKm != nil:
 			car.WarrantyKm = float64(*v.WarrantyKm)
+		case v.WarrantyYears != nil:
+			// A year limit with no km limit ("unlimited km", or km not
+			// published): the warranty is limited by years only. Without this,
+			// a missing km limit became 0 km and the warranty never applied.
+			car.WarrantyKm = unlimitedWarrantyKm
 		}
 		if sc.Item.Condition == ConditionUsed {
 			car.Used = true
@@ -136,6 +144,10 @@ func BuildInputs(cars []SurvivingCar, set catalog.AssumptionSet, usage interview
 	}
 	return b, nil
 }
+
+// unlimitedWarrantyKm stands for "no km limit". A large finite number rather
+// than +Inf, because the inputs are stored as JSON, which has no infinity.
+const unlimitedWarrantyKm = 1e9
 
 // WorldFrom maps the assumption set onto the engine's shared parameters.
 func WorldFrom(set catalog.AssumptionSet) sim.World {

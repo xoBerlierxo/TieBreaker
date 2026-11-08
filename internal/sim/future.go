@@ -42,6 +42,9 @@ func evaluateCar(p *prepared, pc *preparedCar, w *worldDraws, wp *worldPaths, cs
 		// Insurance: premium = rate × IDV, IDV falling with age per the schedule.
 		idv := pc.ValueBasisINR * scheduleAt(world.IDVSchedule, age) / pc.idvNorm
 		insurance := pc.InsuranceRate * idv
+		if t == 1 && pc.FirstYearInsuranceIncluded && !pc.Used {
+			insurance = 0 // already paid inside the on-road price
+		}
 
 		// Service: one visit per service interval, at least the minimum per year.
 		visits := math.Max(km/pc.ServiceIntervalKm, world.ServiceMinVisits)
