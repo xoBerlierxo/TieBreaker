@@ -26,7 +26,7 @@ import (
 // localDSN is the docker-compose development database (see docker-compose.yml).
 // It is only used when DATABASE_URL is unset, and it only ever points at
 // localhost, so it can't seed a remote database by accident.
-const localDSN = "postgres://tiebreaker:tiebreaker_dev_only@localhost:5432/tiebreaker?sslmode=disable"
+const localDSN = "postgres://tiebreaker:tiebreaker_dev_only@localhost:5432/tiebreaker?sslmode=disable" // #nosec G101 -- published dev-only password, localhost only
 
 func main() {
 	if err := run(); err != nil {
