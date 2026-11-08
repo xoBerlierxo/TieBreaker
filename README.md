@@ -8,7 +8,7 @@ NetCost(car, future) = OwnershipCost(car, future) − PreferenceValue(car, futur
 
 In each simulated future, the car with the lowest net cost wins. Across all futures you get P(best) per car. **The engine decides; an optional LLM only rewrites the facts as prose, and is checked against them.**
 
-> ⚠️ **Data status:** the catalogue holds 3 **fictional** sample cars ("Sample Motors", `verified=false`), and every model assumption (fuel prices, tariffs, depreciation…) is a clearly labelled **placeholder**. The API and UI show these warnings everywhere. Replace them with sourced data before trusting any number; see [Data honesty](#data-honesty).
+> ⚠️ **Data status:** the catalogue holds 4 real sedans with a source for every value and sourced Chennai on-road prices ([example report](docs/example-report.md)). The model assumptions (fuel prices, tariffs, depreciation…) is a clearly labelled **placeholder**. The API and UI show these warnings everywhere. Replace them with sourced data before trusting any number; see [Data honesty](#data-honesty).
 
 ---
 

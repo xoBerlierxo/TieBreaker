@@ -45,9 +45,10 @@ This starts Postgres and Redis, runs the database migrations once, then starts t
 Load the catalogue and the assumptions (once, and again after every change in `data/seed/`):
 
 ```powershell
-$env:DATABASE_URL="postgres://tiebreaker:tiebreaker_dev_only@localhost:5432/tiebreaker?sslmode=disable"
-go run ./scripts/seed
+go run ./scripts/seed     # from the repo root; from web/ use: go run ../scripts/seed
 ```
+
+With no `DATABASE_URL` set it uses the local Docker database. Set `DATABASE_URL` only to seed another database (e.g. production).
 
 Start the frontend:
 
@@ -184,7 +185,7 @@ Edit `data/seed/assumptions/common.json` and the four state files (`TN.json`, `K
 
 ```powershell
 go run ./scripts/seed --check     # validates every file without touching the database
-go run ./scripts/seed             # loads it (DATABASE_URL set as in part 2)
+go run ./scripts/seed             # loads it into the local database
 go test ./internal/catalog/...    # the guard tests on data/seed must still pass
 ```
 
