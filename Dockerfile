@@ -3,7 +3,7 @@
 # ---- build stage --------------------------------------------------------------
 # Compiles a static Linux binary. CGO is off, so the binary needs no C libraries
 # and runs on a minimal "distroless" image.
-FROM golang:1.26-alpine AS build
+FROM golang:1.26.10-alpine AS build
 WORKDIR /src
 
 # Download modules first, in their own layer, so editing code doesn't
