@@ -1,0 +1,194 @@
+{
+  "variants": [
+    {
+      "slug": "volkswagen-virtus-comfortline-10-tsi-mt",
+      "body_type": "sedan",
+      "fuel_type": "petrol",
+      "transmission": "manual",
+      "seats": 5,
+      "discontinued_year": null,
+      "efficiency_unit": "km/l",
+      "battery_kwh": null,
+      "claimed_range_km": null,
+      "kerb_weight_kg": null,
+      "make": "Volkswagen",
+      "model": "Virtus",
+      "variant_name": "Comfortline 1.0 TSI MT",
+      "launch_year": 2022,
+      "ex_showroom_price_inr": 1070900,
+      "claimed_efficiency": 20.19,
+      "power_ps": 115.0,
+      "boot_litres": 521,
+      "ground_clearance_mm": 179,
+      "safety_rating_stars": 5,
+      "safety_rating_body": "Global NCAP",
+      "airbags": null,
+      "service_interval_km": 15000,
+      "warranty_years": 4,
+      "warranty_km": 100000,
+      "key_features": [
+        "esc"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "field_name": "make",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "model",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "variant_name",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "body_type",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "fuel_type",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "transmission",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "seats",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "make",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "model",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "variant_name",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "body_type",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "fuel_type",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "transmission",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "seats",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "launch_year",
+          "source_url": "https://www.volkswagen.co.in/en/discover-volkswagen/news/archives/volkswagen-launches-new-virtus-inr-11-21-lakh-for-indian-customer.html",
+          "checked_at": "2026-11-08",
+          "note": "Generation launched 2022."
+        },
+        {
+          "field_name": "ex_showroom_price_inr",
+          "source_url": "https://www.carwale.com/volkswagen-cars/virtus/price-in-chennai/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "claimed_efficiency",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08",
+          "note": "ARAI claimed."
+        },
+        {
+          "field_name": "power_ps",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "power_ps",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://www.volkswagen.co.in/idhub/content/dam/onehub_pkw/importers/in/pdf/Virtus-Brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "safety_rating_stars",
+          "source_url": "https://www.autocarindia.com/stories/vw-virtus-skoda-slavia-crash-tested-492",
+          "checked_at": "2026-11-08",
+          "note": "Global NCAP 2023 test of the Virtus: adult 29.71/34, child 42/49. Not a separate 2026 test."
+        },
+        {
+          "field_name": "key_features",
+          "source_url": "https://www.autocarindia.com/cars/volkswagen/virtus/variants/",
+          "checked_at": "2026-11-08",
+          "note": "ESC, ABS with EBD, multi-collision brakes, rear parking sensors, TPMS. Airbag count for this variant unconfirmed, so 6_airbags is not listed."
+        },
+        {
+          "field_name": "service_interval_km",
+          "source_url": "https://www.volkswagen.co.in/en/owners-and-services/maintenance.html",
+          "checked_at": "2026-11-08",
+          "note": "15,000 km / 12 months."
+        },
+        {
+          "field_name": "warranty_years",
+          "source_url": "https://www.volkswagen.co.in/en/owners-and-services/4ever-care.html",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "warranty_km",
+          "source_url": "https://www.volkswagen.co.in/en/owners-and-services/4ever-care.html",
+          "checked_at": "2026-11-08",
+          "note": "4 years / 1,00,000 km."
+        }
+      ],
+      "on_road_prices": [
+        {
+          "state": "TN",
+          "city": "Chennai",
+          "on_road_price_inr": 1332659,
+          "includes_insurance": true,
+          "source_url": "https://www.carwale.com/volkswagen-cars/virtus/price-in-chennai/",
+          "checked_at": "2026-11-08",
+          "note": "On-road price in Chennai as listed by CarWale; assumed to include first-year insurance."
+        }
+      ]
+    }
+  ]
+}

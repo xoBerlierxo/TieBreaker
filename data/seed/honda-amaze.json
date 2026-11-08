@@ -1,0 +1,155 @@
+{
+  "variants": [
+    {
+      "slug": "honda-amaze-v-12-ivtec-mt",
+      "body_type": "sedan",
+      "fuel_type": "petrol",
+      "transmission": "manual",
+      "seats": 5,
+      "discontinued_year": null,
+      "efficiency_unit": "km/l",
+      "battery_kwh": null,
+      "claimed_range_km": null,
+      "kerb_weight_kg": null,
+      "make": "Honda",
+      "model": "Amaze",
+      "variant_name": "V 1.2 i-VTEC MT",
+      "launch_year": 2024,
+      "ex_showroom_price_inr": 765400,
+      "claimed_efficiency": 18.65,
+      "power_ps": 90.0,
+      "boot_litres": 416,
+      "ground_clearance_mm": 172,
+      "safety_rating_stars": 5,
+      "safety_rating_body": "Bharat NCAP",
+      "airbags": 6,
+      "service_interval_km": 10000,
+      "warranty_years": 3,
+      "warranty_km": null,
+      "key_features": [
+        "6_airbags",
+        "esc"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "field_name": "make",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "model",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "variant_name",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "body_type",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "fuel_type",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "transmission",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "seats",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "launch_year",
+          "source_url": "https://www.hondacarindia.com/press-release/all-new-3rd-generation-honda-amaze-makes-its-global-debut-in-india",
+          "checked_at": "2026-11-08",
+          "note": "Third generation launched 2024."
+        },
+        {
+          "field_name": "ex_showroom_price_inr",
+          "source_url": "https://www.autocarindia.com/cars/honda/amaze/price-in-chennai",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "claimed_efficiency",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08",
+          "note": "ARAI claimed."
+        },
+        {
+          "field_name": "power_ps",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://www.hondacarindia.com/press-release/all-new-3rd-generation-honda-amaze-makes-its-global-debut-in-india",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://www.hondacarindia.com/press-release/all-new-3rd-generation-honda-amaze-makes-its-global-debut-in-india",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "safety_rating_stars",
+          "source_url": "https://www.bncap.in/vehicle/honda-amaze-3rd-gen/",
+          "checked_at": "2026-11-08",
+          "note": "Bharat NCAP: 5 stars adult (28.33/32), 4 stars child (40.81/49). Adult rating used."
+        },
+        {
+          "field_name": "airbags",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "key_features",
+          "source_url": "https://www.hondacarindia.com/web-data/brochures/pdfs/All-new%20Amaze%202025_28Nov25.pdf",
+          "checked_at": "2026-11-08",
+          "note": "6 airbags, ABS with EBD, ESC/VSA, hill start assist, ISOFIX, rear parking sensors."
+        },
+        {
+          "field_name": "service_interval_km",
+          "source_url": "https://www.hondacarindia.com/honda-services/faq",
+          "checked_at": "2026-11-08",
+          "note": "10,000 km / 12 months."
+        },
+        {
+          "field_name": "warranty_years",
+          "source_url": "https://www.hondacarindia.com/honda-services/service-products/warranty",
+          "checked_at": "2026-11-08",
+          "note": "3 years / unlimited km."
+        }
+      ],
+      "on_road_prices": [
+        {
+          "state": "TN",
+          "city": "Chennai",
+          "on_road_price_inr": 899945,
+          "includes_insurance": true,
+          "source_url": "https://www.autocarindia.com/cars/honda/amaze/price-in-chennai",
+          "checked_at": "2026-11-08",
+          "note": "On-road price in Chennai as listed by Autocar India; assumed to include first-year insurance."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "variants": [
+    {
+      "slug": "hyundai-verna-hx2-15-mpi-mt",
+      "body_type": "sedan",
+      "fuel_type": "petrol",
+      "transmission": "manual",
+      "seats": 5,
+      "discontinued_year": null,
+      "efficiency_unit": "km/l",
+      "battery_kwh": null,
+      "claimed_range_km": null,
+      "kerb_weight_kg": null,
+      "make": "Hyundai",
+      "model": "Verna",
+      "variant_name": "HX2 1.5 MPi MT",
+      "launch_year": 2023,
+      "ex_showroom_price_inr": 1099200,
+      "claimed_efficiency": 18.6,
+      "power_ps": 115.0,
+      "boot_litres": 528,
+      "ground_clearance_mm": 165,
+      "safety_rating_stars": 5,
+      "safety_rating_body": "Global NCAP",
+      "airbags": 6,
+      "service_interval_km": 10000,
+      "warranty_years": 3,
+      "warranty_km": null,
+      "key_features": [
+        "6_airbags",
+        "esc"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "field_name": "make",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "model",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "variant_name",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "body_type",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "fuel_type",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "transmission",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "seats",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "launch_year",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08",
+          "note": "Current generation launched 2023 (updated 2026)."
+        },
+        {
+          "field_name": "ex_showroom_price_inr",
+          "source_url": "https://carmaths.in/hyundai/verna/on-road-price/tamil-nadu",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "claimed_efficiency",
+          "source_url": "https://www.autocarindia.com/cars/hyundai/verna/mileage",
+          "checked_at": "2026-11-08",
+          "note": "ARAI claimed."
+        },
+        {
+          "field_name": "power_ps",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://www.autocarindia.com/auto-features-amp/honda-city-vs-rivals-specifications-and-price-compared-440566",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://www.autocarindia.com/auto-features-amp/honda-city-vs-rivals-specifications-and-price-compared-440566",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "safety_rating_stars",
+          "source_url": "https://www.globalncap.org/s/Hyundai-Verna-fact-sheet-2023.pdf",
+          "checked_at": "2026-11-08",
+          "note": "Global NCAP 2023 test of the sixth-generation Verna: adult 28.18/34, child 42/49. The 2026 facelift has not been retested."
+        },
+        {
+          "field_name": "airbags",
+          "source_url": "https://www.hyundai.com/in/en/find-a-car/verna/features",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "airbags",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/newVerna-brochure.pdf",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "key_features",
+          "source_url": "https://www.hyundai.com/in/en/find-a-car/verna/features",
+          "checked_at": "2026-11-08",
+          "note": "6 airbags, ABS with EBD, ESC, VSM, hill assist, emergency stop signal, rear parking sensors."
+        },
+        {
+          "field_name": "service_interval_km",
+          "source_url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/connect-to-service/owners-manual/2025/verna-from-mar-2023-to-mar-2026.pdf",
+          "checked_at": "2026-11-08",
+          "note": "10,000 km / 12 months (first inspection at 1,500 km / 2 months)."
+        },
+        {
+          "field_name": "warranty_years",
+          "source_url": "https://www.hyundai.com/in/en/connect-to-service/warranty-policy/overview",
+          "checked_at": "2026-11-08",
+          "note": "3 years / unlimited km."
+        }
+      ],
+      "on_road_prices": [
+        {
+          "state": "TN",
+          "city": "Chennai",
+          "on_road_price_inr": 1368087,
+          "includes_insurance": true,
+          "source_url": "https://carmaths.in/hyundai/verna/on-road-price/tamil-nadu",
+          "checked_at": "2026-11-08",
+          "note": "On-road price in Chennai as listed by carmaths.in; assumed to include first-year insurance."
+        }
+      ]
+    }
+  ]
+}

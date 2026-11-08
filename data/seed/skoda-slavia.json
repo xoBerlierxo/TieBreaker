@@ -1,0 +1,155 @@
+{
+  "variants": [
+    {
+      "slug": "skoda-slavia-classic-10-tsi-mt",
+      "body_type": "sedan",
+      "fuel_type": "petrol",
+      "transmission": "manual",
+      "seats": 5,
+      "discontinued_year": null,
+      "efficiency_unit": "km/l",
+      "battery_kwh": null,
+      "claimed_range_km": null,
+      "kerb_weight_kg": null,
+      "make": "Skoda",
+      "model": "Slavia",
+      "variant_name": "Classic 1.0 TSI MT",
+      "launch_year": 2022,
+      "ex_showroom_price_inr": 999900,
+      "claimed_efficiency": 20.32,
+      "power_ps": 115.0,
+      "boot_litres": 521,
+      "ground_clearance_mm": 179,
+      "safety_rating_stars": 5,
+      "safety_rating_body": "Global NCAP",
+      "airbags": 6,
+      "service_interval_km": 15000,
+      "warranty_years": 4,
+      "warranty_km": 100000,
+      "key_features": [
+        "6_airbags",
+        "esc"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "field_name": "make",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "model",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "variant_name",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "body_type",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "fuel_type",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "transmission",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "seats",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "launch_year",
+          "source_url": "https://www.skoda-auto.co.in/news/news-detail/the-new-slavia-a-new-chapter-in-skoda-sedan-legacy",
+          "checked_at": "2026-11-08",
+          "note": "Generation launched 2022 (updated model 2026)."
+        },
+        {
+          "field_name": "ex_showroom_price_inr",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/price-in-chennai/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "claimed_efficiency",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08",
+          "note": "ARAI claimed."
+        },
+        {
+          "field_name": "power_ps",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "power_ps",
+          "source_url": "https://www.skoda-auto.co.in/news/news-detail/the-new-skoda-slavia-says-it-all-with-confidence",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "boot_litres",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "ground_clearance_mm",
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/classic-10-tsi-mt/",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "safety_rating_stars",
+          "source_url": "https://www.autocarindia.com/auto-features/every-indian-car-tested-by-global-ncap-under-new-protocols-431384",
+          "checked_at": "2026-11-08",
+          "note": "Global NCAP: adult 29.71/34, child 42/49."
+        },
+        {
+          "field_name": "airbags",
+          "source_url": "https://www.autocarindia.com/auto-features-amp/which-variant-of-the-2026-skoda-slavia-should-you-buy-441140",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "key_features",
+          "source_url": "https://www.autocarindia.com/auto-features-amp/which-variant-of-the-2026-skoda-slavia-should-you-buy-441140",
+          "checked_at": "2026-11-08",
+          "note": "6 airbags, ESC, ABS with EBD, EDL, hill hold, TCS, TPMS, ISOFIX, rear parking sensors."
+        },
+        {
+          "field_name": "service_interval_km",
+          "source_url": "https://www.skoda-auto.co.in/owners-information/maintenance-tips-faqs-page",
+          "checked_at": "2026-11-08",
+          "note": "15,000 km / 12 months."
+        },
+        {
+          "field_name": "warranty_years",
+          "source_url": "https://www.skoda-auto.co.in/news/news-detail/the-new-skoda-slavia-says-it-all-with-confidence",
+          "checked_at": "2026-11-08"
+        },
+        {
+          "field_name": "warranty_km",
+          "source_url": "https://www.skoda-auto.co.in/news/news-detail/the-new-skoda-slavia-says-it-all-with-confidence",
+          "checked_at": "2026-11-08",
+          "note": "4 years / 1,00,000 km."
+        }
+      ],
+      "on_road_prices": [
+        {
+          "state": "TN",
+          "city": "Chennai",
+          "on_road_price_inr": 1175483,
+          "includes_insurance": true,
+          "source_url": "https://www.autocarindia.com/cars/skoda/slavia/price-in-chennai/",
+          "checked_at": "2026-11-08",
+          "note": "On-road price in Chennai as listed by Autocar India; assumed to include first-year insurance."
+        }
+      ]
+    }
+  ]
+}
