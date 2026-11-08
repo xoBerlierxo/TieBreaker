@@ -28,6 +28,8 @@
    | `GEMINI_MODEL` | e.g. `gemini-3.5-flash-lite` (checked 2026-11-07; see `.env.example`) |
 
    You don't need `HTTP_ADDR`: the API listens on Railway's `$PORT` automatically.
+
+   **Real client IPs:** behind Railway's proxy, every request reaches the API from the proxy's address, so per-IP rate limits would be shared by all users. Set `CLIENT_IP_HEADER` to the header Railway's proxy fills with the client IP (commonly `X-Real-IP`; confirm in Railway's docs or by logging a request's headers). Only set it to a header the proxy always overwrites, otherwise clients could spoof it.
 4. *Settings → Networking → Generate domain* for **api**. *Settings → Healthcheck path:* `/readyz`.
 5. **+ New → GitHub repo** (the same repo) again, and name it **worker**. Give it the same variables as **api** except: `TIEBREAKER_MODE=worker`, and no `MIGRATE_ON_START` or `CORS_ALLOWED_ORIGINS`. It needs no domain.
 6. Deploy. The API applies migrations at start. Check:

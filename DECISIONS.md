@@ -562,3 +562,36 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 - **Decision:** the frontend uses a near-black background with soft bordered panels, an emerald→teal gradient for primary buttons, green monospace uppercase eyebrows, large headlines with a muted grey continuation, a three-segment "Step N of 3" bar, tap-to-select option cards (state, budget segment, seats, gearbox, home charging, yes/no trade-offs), and a large ₹ budget slider. Shared pieces live in `web/components/ui.tsx` (`Eyebrow`, `Pill`, `Card`, `Button`, `OptionCard`, `StepBar`, `PageTitle`).
 - **Why:** the developer asked for the look of autowisdom.in (screenshots provided). Only the visual style was borrowed; Tiebreaker keeps its own name, copy and logo, and no assets were copied.
 - **Behaviour unchanged:** the API calls, If-Match/Idempotency-Key handling and every field sent are as before. The budget is now chosen in lakh on a slider (or "No limit") and sent as rupees.
+
+
+---
+
+## Security review (2026-11-08)
+
+### D-SEC-1 — Toolchain and dependency fixes
+- **Found:** `govulncheck` reported 35 reachable vulnerabilities, almost all in the Go 1.26.1 standard library (net/http, crypto/x509, crypto/tls, html/template…), plus x/net, x/text, gRPC and quic-go.
+- **Fixed:** `toolchain go1.26.10` in go.mod (so local builds and CI use it), `golang:1.26.10-alpine` in the Dockerfile, x/net v0.61.0, x/text v0.43.0, gRPC v1.84.0, quic-go v0.59.1. All are at least two weeks old. Result: 0 reachable vulnerabilities; 3 remain in modules we require but never call. `npm audit`: 0.
+
+### D-SEC-2 — Real client IP behind a proxy (`CLIENT_IP_HEADER`)
+- **Found:** with no trusted proxies, `ClientIP()` is the TCP peer. Behind Railway's proxy that is the proxy for everyone, so a per-IP limit would throttle all users together.
+- **Fixed:** an opt-in `CLIENT_IP_HEADER` sets Gin's `TrustedPlatform`. The default stays the unspoofable TCP peer, because trusting a header the proxy doesn't overwrite would let clients forge their IP.
+
+### D-SEC-3 — Rate limits on session creation and next-question
+- **Found:** `POST /v1/sessions` (a database write) and `GET next-question` (up to ~64 quick simulations) were public and unlimited.
+- **Fixed:** per-IP limits of 60 sessions an hour and 60 questions a minute (configurable; 0 disables). They fail closed like the simulation limit.
+
+### D-SEC-4 — Published placeholder secrets are refused in production
+- **Found:** the docker-compose default `JWT_SECRET` is 38 characters, so it passed the ≥32-character production check, and it is public in the repo.
+- **Fixed:** production refuses secrets containing placeholder markers (`change-me`, `dev-only`, `insecure`, `example`, `placeholder`).
+
+### D-SEC-5 — Hardening
+- Compose publishes Postgres, Redis and the API on `127.0.0.1` only (Redis has no password in development).
+- Security headers on every response: the API sends `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` and `Content-Security-Policy: default-src 'none'`. The frontend sends the same plus `Permissions-Policy`. `no-referrer` keeps session IDs in page URLs from leaking to other sites.
+- GitHub Actions are pinned to commit SHAs (tags can be moved).
+- `SECURITY.md` documents the model and how to report issues.
+
+### D-SEC-6 — Accepted residual risks
+- Session IDs are bearer secrets in URLs; that's acceptable without accounts, and they never appear in share links or access logs.
+- SSE connections aren't capped per IP (each ends after 10 minutes).
+- `idempotency_keys` rows are never purged (there's an index on `created_at` for a future cleanup job).
+- The frontend CSP doesn't restrict scripts, since Next.js needs nonces for that.
