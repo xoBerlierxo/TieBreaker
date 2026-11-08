@@ -16,10 +16,10 @@ func ptr[T any](v T) *T { return &v }
 
 var testNow = time.Date(2026, 11, 7, 12, 0, 0, 0, time.UTC)
 
-// seedSet loads the real placeholder assumptions from data/seed, without a DB.
+// seedSet loads the fictional fixture assumptions (testdata/seed), without a DB.
 func seedSet(t *testing.T, state string) catalog.AssumptionSet {
 	t.Helper()
-	_, files, err := catalog.ReadSeedDir("../../data/seed")
+	_, files, err := catalog.ReadSeedDir("../../testdata/seed")
 	if err != nil {
 		t.Fatal(err)
 	}

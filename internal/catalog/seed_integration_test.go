@@ -11,11 +11,11 @@ func TestLoadSeed_IdempotentUpsert(t *testing.T) {
 	resetCatalog(t)
 	ctx := context.Background()
 
-	first, err := LoadDir(ctx, testDB, realSeedDir)
+	first, err := LoadDir(ctx, testDB, fixtureSeedDir)
 	if err != nil {
 		t.Fatalf("first load: %v", err)
 	}
-	second, err := LoadDir(ctx, testDB, realSeedDir)
+	second, err := LoadDir(ctx, testDB, fixtureSeedDir)
 	if err != nil {
 		t.Fatalf("second load: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestLoadSeed_IdempotentUpsert(t *testing.T) {
 func TestLoadAssumptionSet_FromDatabase(t *testing.T) {
 	resetCatalog(t)
 	ctx := context.Background()
-	if _, err := LoadDir(ctx, testDB, realSeedDir); err != nil {
+	if _, err := LoadDir(ctx, testDB, fixtureSeedDir); err != nil {
 		t.Fatal(err)
 	}
 	svc := NewService(testDB)

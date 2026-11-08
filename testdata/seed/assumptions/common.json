@@ -1,0 +1,451 @@
+{
+  "model_version": "sim-v1",
+  "assumptions": [
+    {
+      "key": "price_trend.petrol",
+      "value": {
+        "mu": 0.03,
+        "sigma": 0.05
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "price_trend.diesel",
+      "value": {
+        "mu": 0.03,
+        "sigma": 0.05
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "price_trend.cng",
+      "value": {
+        "mu": 0.03,
+        "sigma": 0.06
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "price_trend.electricity",
+      "value": {
+        "mu": 0.02,
+        "sigma": 0.03
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "price_trend.sweep",
+      "value": {
+        "mu_range": [
+          -0.02,
+          0.1
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "real_efficiency_factor.petrol",
+      "value": {
+        "city": [
+          0.65,
+          0.8
+        ],
+        "highway": [
+          0.8,
+          0.95
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "real_efficiency_factor.diesel",
+      "value": {
+        "city": [
+          0.65,
+          0.8
+        ],
+        "highway": [
+          0.8,
+          0.95
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "real_efficiency_factor.cng",
+      "value": {
+        "city": [
+          0.7,
+          0.85
+        ],
+        "highway": [
+          0.85,
+          0.95
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "real_efficiency_factor.ev",
+      "value": {
+        "city": [
+          0.75,
+          0.9
+        ],
+        "highway": [
+          0.65,
+          0.8
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "real_efficiency_factor.strong_hybrid",
+      "value": {
+        "city": [
+          0.75,
+          0.9
+        ],
+        "highway": [
+          0.7,
+          0.85
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "ev.charging_efficiency",
+      "value": {
+        "value": 0.88
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "ev.battery_wear",
+      "value": {
+        "per_year": 0.02
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "usage.km_year_sigma",
+      "value": {
+        "value": 0.1
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "insurance.premium_rate",
+      "value": {
+        "petrol": 0.03,
+        "diesel": 0.032,
+        "cng": 0.032,
+        "ev": 0.035,
+        "strong_hybrid": 0.03
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "insurance.idv_schedule",
+      "value": {
+        "factors": [
+          0.95,
+          0.85,
+          0.8,
+          0.7,
+          0.6,
+          0.5
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "service.cost_per_visit",
+      "value": {
+        "small": {
+          "petrol": 4000,
+          "diesel": 5000,
+          "cng": 4500,
+          "ev": 2500,
+          "strong_hybrid": 4500
+        },
+        "medium": {
+          "petrol": 6000,
+          "diesel": 7500,
+          "cng": 6750,
+          "ev": 3750,
+          "strong_hybrid": 6750
+        },
+        "large": {
+          "petrol": 8000,
+          "diesel": 10000,
+          "cng": 9000,
+          "ev": 5000,
+          "strong_hybrid": 9000
+        }
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "service.min_visits_per_year",
+      "value": {
+        "value": 1
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "general_inflation.rate",
+      "value": {
+        "value": 0.05
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "repairs.model",
+      "value": {
+        "base_rate_per_year": {
+          "petrol": 0.3,
+          "diesel": 0.35,
+          "cng": 0.4,
+          "ev": 0.2,
+          "strong_hybrid": 0.3
+        },
+        "age_slope": 0.15,
+        "odo_slope_per_100k": 0.5,
+        "grade_multiplier": {
+          "good": 1.0,
+          "fair": 1.3,
+          "poor": 1.8
+        },
+        "used_multiplier": 1.2,
+        "cost_mu": 8.9872,
+        "cost_sigma": 0.8,
+        "warranty_coverage": 0.8
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "tyres.model",
+      "value": {
+        "set_cost_inr": {
+          "small": 16000,
+          "medium": 24000,
+          "large": 36000
+        },
+        "life_km": 40000
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "resale.shock",
+      "value": {
+        "market_sigma": 0.08,
+        "idio_sigma": 0.1
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "resale.curve.petrol",
+      "value": {
+        "fractions": [
+          0.85,
+          0.75,
+          0.67,
+          0.6,
+          0.54,
+          0.49,
+          0.44,
+          0.4,
+          0.36,
+          0.32,
+          0.29,
+          0.26,
+          0.23,
+          0.2,
+          0.18
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "resale.curve.diesel",
+      "value": {
+        "fractions": [
+          0.85,
+          0.74,
+          0.65,
+          0.57,
+          0.5,
+          0.44,
+          0.39,
+          0.34,
+          0.3,
+          0.26,
+          0.22,
+          0.19,
+          0.16,
+          0.13,
+          0.1
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "resale.curve.cng",
+      "value": {
+        "fractions": [
+          0.82,
+          0.71,
+          0.62,
+          0.55,
+          0.49,
+          0.44,
+          0.39,
+          0.35,
+          0.31,
+          0.27,
+          0.24,
+          0.21,
+          0.18,
+          0.15,
+          0.12
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "resale.curve.ev",
+      "value": {
+        "fractions": [
+          0.8,
+          0.68,
+          0.58,
+          0.5,
+          0.43,
+          0.37,
+          0.32,
+          0.28,
+          0.24,
+          0.21,
+          0.18,
+          0.15,
+          0.12,
+          0.1,
+          0.08
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "resale.curve.strong_hybrid",
+      "value": {
+        "fractions": [
+          0.86,
+          0.76,
+          0.68,
+          0.61,
+          0.55,
+          0.5,
+          0.45,
+          0.41,
+          0.37,
+          0.33,
+          0.3,
+          0.27,
+          0.24,
+          0.21,
+          0.19
+        ]
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    },
+    {
+      "key": "service.default_interval_km",
+      "value": {
+        "value": 10000
+      },
+      "source_url": "TODO",
+      "checked_at": null,
+      "verified": false,
+      "note": "PLACEHOLDER value for development only. Replace with a sourced value and set verified=true."
+    }
+  ]
+}

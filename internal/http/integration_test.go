@@ -75,7 +75,8 @@ func runIntegration(m *testing.M) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	if _, err := catalog.LoadDir(ctx, db, "../../data/seed"); err != nil {
+	// The fictional fixture, independent of data/seed (which holds real cars).
+	if _, err := catalog.LoadDir(ctx, db, "../../testdata/seed"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}

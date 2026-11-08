@@ -9,7 +9,13 @@ import (
 	"testing"
 )
 
-const realSeedDir = "../../data/seed"
+// repoSeedDir is the real catalogue the developer curates. Only the two guard
+// tests below read it; everything else uses the fictional fixture, so
+// replacing the sample cars with real ones never breaks a test.
+const (
+	repoSeedDir    = "../../data/seed"
+	fixtureSeedDir = "../../testdata/seed"
+)
 
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
@@ -60,9 +66,9 @@ func TestReadSeedDir_RejectsVerifiedAssumptionWithTODOSource(t *testing.T) {
 // placeholder sources. A variant marked verified must have real sources for every
 // field (the developer adds those).
 func TestSeedRepo_SamplesAreFictionalAndUnverified(t *testing.T) {
-	variants, _, err := ReadSeedDir(realSeedDir)
+	variants, _, err := ReadSeedDir(repoSeedDir)
 	if err != nil {
-		t.Fatalf("ReadSeedDir(%s): %v", realSeedDir, err)
+		t.Fatalf("ReadSeedDir(%s): %v", repoSeedDir, err)
 	}
 	samples := 0
 	for _, v := range variants {
@@ -90,19 +96,14 @@ func TestSeedRepo_SamplesAreFictionalAndUnverified(t *testing.T) {
 }
 
 func TestAssumptionSeed_EveryKeyPresentForEveryState(t *testing.T) {
-	_, files, err := ReadSeedDir(realSeedDir)
+	_, files, err := ReadSeedDir(repoSeedDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rows := seedRows(files)
 	for _, state := range SupportedStates() {
-		set, err := BuildAssumptionSet(state, "sim-v1", rows)
-		if err != nil {
+		if _, err := BuildAssumptionSet(state, "sim-v1", rows); err != nil {
 			t.Errorf("state %s: %v", state, err)
-			continue
-		}
-		if len(set.UnverifiedKeys()) == 0 {
-			t.Errorf("state %s: expected placeholder (unverified) keys in the seed data", state)
 		}
 	}
 }
@@ -120,7 +121,7 @@ func seedRows(files []AssumptionFile) []Assumption {
 
 func realSet(t *testing.T, state string) AssumptionSet {
 	t.Helper()
-	_, files, err := ReadSeedDir(realSeedDir)
+	_, files, err := ReadSeedDir(fixtureSeedDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +143,7 @@ func TestAssumptionSet_ParsesEveryKey(t *testing.T) {
 }
 
 func TestAssumptionSet_MissingKeyIsError(t *testing.T) {
-	_, files, _ := ReadSeedDir(realSeedDir)
+	_, files, _ := ReadSeedDir(fixtureSeedDir)
 	rows := seedRows(files)
 	var trimmed []Assumption
 	for _, r := range rows {
@@ -163,7 +164,7 @@ func TestAssumptionSet_UnsupportedStateIsValidationError(t *testing.T) {
 }
 
 func TestAssumptionSet_TypoInValueIsError(t *testing.T) {
-	_, files, _ := ReadSeedDir(realSeedDir)
+	_, files, _ := ReadSeedDir(fixtureSeedDir)
 	rows := seedRows(files)
 	for i := range rows {
 		if rows[i].Key == "price_trend.petrol" {
