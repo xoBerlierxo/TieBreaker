@@ -1,5 +1,5 @@
 // Command demo walks through the whole Tiebreaker flow against a running API:
-// create a session, shortlist the three sample cars, set constraints, answer
+// create a session, shortlist 2–4 cars matching -q, set constraints, answer
 // the usage and trade-off questions, run the full simulation while streaming
 // its progress, and print the report and its share link.
 //
@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -28,9 +29,10 @@ import (
 
 func main() {
 	base := flag.String("base", "http://localhost:8080", "API base URL")
+	query := flag.String("q", "sample", "catalogue search used to pick 2–4 cars (e.g. -q nexon)")
 	flag.Parse()
 	c := &client{base: strings.TrimRight(*base, "/"), http: &http.Client{Timeout: 30 * time.Second}}
-	if err := run(c); err != nil {
+	if err := run(c, *query); err != nil {
 		fmt.Fprintln(os.Stderr, "demo failed:", err)
 		os.Exit(1)
 	}
@@ -84,7 +86,7 @@ func newKey() string {
 
 func step(format string, args ...any) { fmt.Printf("\n▶ "+format+"\n", args...) }
 
-func run(c *client) error {
+func run(c *client, query string) error {
 	step("Health check")
 	if _, err := c.do("GET", "/readyz", nil, nil, nil); err != nil {
 		return err
@@ -99,7 +101,7 @@ func run(c *client) error {
 	}
 	fmt.Println("  session", sess.ID)
 
-	step("Search the catalogue and shortlist the three sample cars")
+	step("Search the catalogue for %q and shortlist up to four cars", query)
 	var found struct {
 		Variants []struct {
 			ID          string   `json:"id"`
@@ -107,11 +109,11 @@ func run(c *client) error {
 			Warnings    []string `json:"warnings"`
 		} `json:"variants"`
 	}
-	if _, err := c.do("GET", "/v1/variants?q=sample", nil, nil, &found); err != nil {
+	if _, err := c.do("GET", "/v1/variants?limit=4&q="+url.QueryEscape(query), nil, nil, &found); err != nil {
 		return err
 	}
 	if len(found.Variants) < 2 {
-		return fmt.Errorf("found %d sample variants; run the seed loader first (go run ./scripts/seed)", len(found.Variants))
+		return fmt.Errorf("search %q found %d cars, need at least 2; run the seed loader (go run ./scripts/seed) or pass -q", query, len(found.Variants))
 	}
 	for _, v := range found.Variants {
 		fmt.Printf("  + %s  warnings=%v\n", v.DisplayName, v.Warnings)
