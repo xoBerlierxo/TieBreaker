@@ -25,3 +25,6 @@ Thumbs.db
 /web/.vercel/
 /web/next-env.d.ts
 /web/*.tsbuildinfo
+
+# Backend resume
+resume_backend.tex

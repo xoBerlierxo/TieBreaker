@@ -59,6 +59,7 @@ CI (`.github/workflows/ci.yml`) runs five jobs: lint, unit (also fails if `go mo
 
 ## Non-negotiable rules from SPEC.md (easy to violate by accident)
 
+- **`data/seed/` is the developer's real catalogue; tests must use the fictional fixture in `testdata/seed/`** (only the two guard tests in `internal/catalog/seed_test.go` read `data/seed`).
 - **Never invent real car specs, prices or safety ratings**, in code, seed data or tests. Sample variants are fictional ("Sample Motors"), `verified=false`, with placeholder sources. Assumption values are `PLACEHOLDER` / `verified=false` / `source_url="TODO"`. A missing safety rating is "not rated", never 0.
 - **The engine decides; the LLM only writes prose.** No number or ranking may come from Gemini. LLM output must pass the fact validator, otherwise the template is used.
 - **Determinism.** Chunk `i` uses `rand.New(rand.NewPCG(masterSeed, uint64(i)))`. Merge chunks in chunk order. Each future draws a fixed number of world values in a fixed order. Car streams are keyed by the stable shortlist-item ID. No map iteration, clock or global rand in result paths. Results must be bit-identical for 1, 4 and 16 workers.

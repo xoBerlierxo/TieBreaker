@@ -553,3 +553,7 @@ The ID format is `D-<milestone>-<n>`. `D-P-*` entries were taken during planning
 
 ### D-M7-9 — k6 scripts are provided but not run here
 - **Why:** k6 isn't installed on the development machine, and load testing is optional (SPEC §15). The engine's latency is covered by Go benchmarks (`docs/benchmarks.md`). The scripts are in `scripts/k6/` with usage notes.
+
+### D-M7-10 — Tests use a frozen fictional fixture (`testdata/seed/`), not `data/seed/`
+- **Decision:** the original sample data was copied to `testdata/seed/`, and every test that needs catalogue data loads that copy. Only two guard tests read the real `data/seed/`: every assumption key exists for every state, and no car is marked verified without real sources. The demo client takes `-q <search>` so it works with real cars.
+- **Why:** the developer is replacing the sample cars and placeholder assumptions with real, sourced data. The tests previously searched for "alpha"/"beta"/"gamma" and required some assumptions to stay placeholders, so real data would have broken CI.

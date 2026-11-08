@@ -56,13 +56,15 @@ More: [docs/architecture.md](docs/architecture.md), [FLOW.md](FLOW.md) (how exec
 
 ## Quick start (local)
 
+> First time, or setting up real data, Gemini or deployment? Follow **[docs/SETUP.md](docs/SETUP.md)**.
+
 Requirements: Docker Desktop, Go 1.26+, Node 22 (for the frontend).
 
 ```bash
 docker compose up -d --build        # postgres + redis → migrate → api (:8080) + worker
 DATABASE_URL="postgres://tiebreaker:tiebreaker_dev_only@localhost:5432/tiebreaker?sslmode=disable" \
   go run ./scripts/seed             # load the sample catalogue and placeholder assumptions
-bash scripts/demo.sh                # the whole flow end to end in the terminal
+bash scripts/demo.sh                # the whole flow end to end (add a search term to use other cars: bash scripts/demo.sh http://localhost:8080 <term>)
 
 cd web && npm ci && npm run dev     # the UI on http://localhost:3000
 ```
